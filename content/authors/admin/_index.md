@@ -37,7 +37,7 @@ organizations:
 - name: TESC
   url: https://experiencesampling.nl
   
-role: Assitant-Professor in Methods and Statistics
+role: Assistant-Professor in Methods and Statistics
 
 social:
 - icon: twitter
