@@ -10,21 +10,18 @@ authors:
 # Is this the primary user of the site?
 superuser: true
 
-bio: I'm a developmental psychologist, former NIH Principal Investigator, and autism researcher who loves programming.
+bio: I'm an Assistant-Professor in methods and statistics who loves teaching, programming, and intensive longitudinal methods.
 education:
   courses:
-  - course: Introduction to Research Methodology
-    institution: Tilburg University
-    year: 2021
-  - course: Psychometrics
-    institution: Erasmus University Rotterdam
-    year: 2020
-  - course: Multilevel Regression
-    institution: Erasmus University Rotterdam
-    year: 2020
-  - course: Multilevel Structural Equation Modeling
-    institution: Erasmus University Rotterdam
-    year: 2020
+  - course: PhD in Methods and Statistics
+    institution: Utrecht University
+    year: 2016
+  - course: Research Master 'Methodology and Statistics of Behavioral and Social Sciences'
+    institution: Utrecht University
+    year: 2009
+  - course: Master in Psychology (specialization Neuropsychology)
+    institution: Utrecht University
+    year: 2006
 email: ""
 interests:
 - Experience Sampling
@@ -37,6 +34,8 @@ interests:
 organizations:
 - name: RStudio
   url: https://www.rstudio.com
+- name: TESC
+  url: https://experiencesampling.nl
   
 role: Assitant-Professor in Methods and Statistics
 
