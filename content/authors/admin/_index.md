@@ -1,7 +1,7 @@
 ---
 bio: My research interests include Vector Autoregressive Models, Experience Sampling, (Intensive) Longitudinal Modeling, Multilevel Analysis, Bayesian Statistics, and Gaussian Processes.
 education: PhD in Methods and Statistics from Utrecht University
-<!---  courses:
+courses:
   - course: PhD in Artificial Intelligence
     institution: Stanford University
     year: 2012
@@ -11,7 +11,6 @@ education: PhD in Methods and Statistics from Utrecht University
   - course: BSc in Artificial Intelligence
     institution: Massachusetts Institute of Technology
     year: 2008
---->
 email: "j.jongerling@tilburguniversity.edu"
 highlight_name: true
 interests:
