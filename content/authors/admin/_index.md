@@ -49,4 +49,4 @@ title: Joran Jongerling
 Joran Jongerling is an Assistant-Professor in Methods and Statistics at Tilburg University. His research is on estimation methods for intensive longitudinal data, and on the impact of sample size, missingness, and measurement on results.
 
 
-{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
+{{< icon name="download" pack="fas" >}} Download my {{< staticref "media/Joran Jongerling CV.pdf" "newtab" >}}CV{{< /staticref >}}.
