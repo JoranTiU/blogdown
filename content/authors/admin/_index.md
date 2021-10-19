@@ -53,4 +53,4 @@ social:
 ---
 
 
-I'm an Assistant-Professor in Methods and Statistics at Tilburg University. My reserach is on estimation methods for intensive longitudinal data, and on the impact of sample size, missingness, and measurement on results .
+I'm an Assistant-Professor in Methods and Statistics at Tilburg University. My research is on estimation methods for intensive longitudinal data, and on the impact of sample size, missingness, and measurement on results .
