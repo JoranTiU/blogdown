@@ -7,4 +7,4 @@ type: page
 view: 2
 ---
 
-I teach the following courses: Introduction to Reserach Methods, Multilevel Analysis, Multilevel SEM, Psychometrics
+I teach the following courses: Introduction to Research Methods, Multilevel Analysis, Multilevel SEM, Psychometrics
