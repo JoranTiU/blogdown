@@ -5,7 +5,7 @@ name: Joran Jongerling
 # Username (this should match the folder name)
 title: Joran Jongerling
 authors:
-- JOran
+- Joran
 
 # Is this the primary user of the site?
 superuser: true
