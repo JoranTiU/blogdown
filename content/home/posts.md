@@ -21,8 +21,8 @@ content:
   # Filter on criteria
   filters:
     author: ""
-    category: "demo"
-    tag: ""
+    category: ""
+    tag: "ILD"
     exclude_featured: false
     exclude_future: false
     exclude_past: false
