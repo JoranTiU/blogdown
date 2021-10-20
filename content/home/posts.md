@@ -20,7 +20,7 @@ content:
   count: 5
   # Filter on criteria
   filters:
-    author: "吳恩達"
+    author: ""
     category: ""
     tag: ""
     exclude_featured: false
