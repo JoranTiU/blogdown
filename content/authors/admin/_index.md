@@ -48,7 +48,7 @@ social:
   link: https://github.com/JoranTiU
 - icon: linkedin-in
   icon_pack: fab
-  link: https://www.linkedin.com/in/joran-jongerling/
+  link: https://www.linkedin.com/in/joran-jongerling-488b34aa/
 
 ---
 

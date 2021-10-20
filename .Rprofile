@@ -23,7 +23,7 @@ options(
   # https://alison.rbind.io/post/2019-02-21-hugo-page-bundles/#project-specific-rprofile
   # and 
   # https://alison.rbind.io/post/new-year-new-blogdown/#step-4-create-content
-  blogdown.author = "A. Solomon Kurz",
+  blogdown.author = "Joran Jongerling",
   blogdown.ext = ".Rmd",
   blogdown.subdir = "post",
   blogdown.yaml.empty = TRUE,
