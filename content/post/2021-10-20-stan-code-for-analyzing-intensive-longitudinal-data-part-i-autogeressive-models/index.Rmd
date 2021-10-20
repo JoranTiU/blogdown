@@ -1,5 +1,5 @@
 ---
-title: 'STAN Code for Analyzing Intensive Longitudinal Data: Part I - Autogeressive
+title: 'STAN Code for Analyzing Intensive Longitudinal Data: Part I - Autoregressive
   Models'
 author: "Joran Jongerling"
 date: '2021-10-20'
@@ -265,7 +265,7 @@ estimated_ar_select_model <- sampling(Basic_AR_Select_Lag,
                                data = mod_data_select, 
                                iter = 2000)
 
-# Show Results: True alpha = 0, true beta = .5
+# Show Results: True alpha = 0, true beta = .5, true sigma = 1
 
 print(estimated_ar_model)
 
