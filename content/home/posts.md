@@ -20,9 +20,9 @@ content:
   count: 5
   # Filter on criteria
   filters:
-    author: ""
+    author: "吳恩達"
     category: ""
-    tag: "Academic"
+    tag: ""
     exclude_featured: false
     exclude_future: false
     exclude_past: false
