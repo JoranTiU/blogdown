@@ -1,17 +1,17 @@
 ---
 title: 'STAN Code for Analyzing Intensive Longitudinal Data: Part I - Autogeressive
   Models'
-author: Joran Jongerling
+author: "Joran Jongerling"
 date: '2021-10-20'
 slug: STAN-AR
 categories: []
 tags:
-  - Bayesian
-  - STAN
-  - AR
-  - ILD
-  - R
-  - tutorial
+- Bayesian
+- STAN
+- AR
+- ILD
+- R
+- tutorial
 subtitle: ''
 summary: ''
 authors: []
@@ -39,7 +39,7 @@ Now let's get started....everyone, let me introduce the AR(1) model!
 
 Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the "no frills" version of the code:
 
-```{stan output.var=ARMod, eval=FALSE}
+```{stan output.var="ARModAuto", eval=FALSE}
 
 // The input data is a vector 'y' of length 'N'.
 data {
@@ -70,7 +70,7 @@ model {
 
 I also have code that allows you to select different lags (indicated by K in the code below) for you autoregressive model. That code looks like this:
 
-```{stan output.var=ARModAuto, eval=FALSE}
+```{stan output.var="ARModAuto", eval=FALSE}
 // The input data is a vector 'y' of length 'N'.
 data {
   int<lower=0> K;
@@ -109,7 +109,7 @@ Now, you can either copy and paste the code and be off, or read on below for som
 
 STAN code is very (veeeery) strucured. This takes some getting used to, but I ended up liking it (although I still curse it from time to time). For a very thorough discussion of the STAN language and block structure chech out this amazing "[intro](https://betanalpha.github.io/assets/case_studies/stan_intro.html#1_prologue)" by Michael Betancourt. I'll only describe the block and elements that are actually in this model. First up, the data block.
 
-```{stan output.var=ARModdat, eval=FALSE}
+```{stan output.var="ARModdat", eval=FALSE}
 
 // The input data is a vector 'y' of length 'N'.
 data {
@@ -144,7 +144,7 @@ K <- 1
 
 Next is the parameters block. Here you specify all the parameters of you model, for this model an intercept (alpha), an AR-parameter (beta), and the standard deviation of the residuals (sigma). As for the data, you have to specify the type for your parameters (here the type of all parameters is real, since they are all continuous variables). I also specify a lower bound for my standard deviation (sigma) and an upper and lower bound for my AR-parameter (beta). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.
 
-```{stan output.var=ARModpar, eval=FALSE}
+```{stan output.var="ARModpar", eval=FALSE}
 
 // The parameters accepted by the model. Our model accepts two parameters 'mu' and 'sigma'.
 parameters {
@@ -157,7 +157,7 @@ parameters {
 
 The parameter block for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).
 
-```{stan output.var=ARModAutopar, eval=FALSE}
+```{stan output.var="ARModAutopar", eval=FALSE}
 parameters {
   real alpha;
   real<lower=-1, upper=1> beta[K];
@@ -168,7 +168,7 @@ parameters {
 
 Finally, the model block. This is where you specify your full Bayesian model, the priors for your parameters and the observational model for your data. I'm using normal priors for my intercept and AR-parameter, and a half-normal prior for my SD. Note that I put a normal distribution on sigma, but since I specified it should be larger than 0 in the parameters block, STAN turns this into a half-normal distribution (did I already mention STAN is awesome?). For my outcome variable y, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (beta). Note that I can't use the first observation on y, as there is no previous observation that I can use as a predictor for the first observation.
 
-```{stan output.var=ARModmod, eval=FALSE}
+```{stan output.var="ARModmod", eval=FALSE}
 
 // The model to be estimated. We model the output 'y' to be normally distributed with mean 'mu'
 // and standard deviation 'sigma'.
@@ -187,7 +187,7 @@ model {
 
 For the model in which you can specify the lag you want, the basics are the same but I include an additional loop so all the lags I want are fitted to the model. 
 
-```{stan output.var=ARModAutomod, eval=FALSE}
+```{stan output.var="ARModAutomod", eval=FALSE}
 // The model to be estimated. We model the output 'y' to be normally distributed with mean 'mu'
 // and standard deviation 'sigma'.
 model {
@@ -257,12 +257,12 @@ Basic_AR_Select_Lag <- stan_model("AR-K-model.stan")
 
 # Estimate the two models
 estimated_ar_model <- sampling(Basic_AR, 
-                            data = mod_data3, 
+                            data = mod_data, 
                             iter = 2000)
 
 
 estimated_ar_select_model <- sampling(Basic_AR_Select_Lag, 
-                               data = mod_data3, 
+                               data = mod_data_select, 
                                iter = 2000)
 
 # Show Results: True alpha = 0, true beta = .5
