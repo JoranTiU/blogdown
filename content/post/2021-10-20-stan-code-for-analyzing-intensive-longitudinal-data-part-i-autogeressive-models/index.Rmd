@@ -258,12 +258,14 @@ Basic_AR_Select_Lag <- stan_model("AR-K-model.stan")
 # Estimate the two models
 estimated_ar_model <- sampling(Basic_AR, 
                             data = mod_data, 
-                            iter = 2000)
+                            iter = 2000,
+                            chains=2)
 
 
 estimated_ar_select_model <- sampling(Basic_AR_Select_Lag, 
                                data = mod_data_select, 
-                               iter = 2000)
+                               iter = 2000,
+                               chains=2)
 
 # Show Results: True alpha = 0, true beta = .5, true sigma = 1
 
