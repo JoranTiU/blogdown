@@ -22,7 +22,7 @@ content:
   filters:
     author: ""
     category: ""
-    tag: ""
+    tag: "Academic"
     exclude_featured: false
     exclude_future: false
     exclude_past: false
