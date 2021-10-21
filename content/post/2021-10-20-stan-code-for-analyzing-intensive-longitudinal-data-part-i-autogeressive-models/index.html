@@ -126,7 +126,7 @@ parameters {
   real&lt;lower=0&gt; sigma;
 }
 </code></pre>
-<p>The <em>parameter block</em> for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).</p>
+<p>The <em>parameters block</em> for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).</p>
 <pre class="stan"><code>parameters {
   real alpha;
   real&lt;lower=-1, upper=1&gt; beta[K];
@@ -234,9 +234,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 0.256 seconds (Warm-up)
-## Chain 1:                0.267 seconds (Sampling)
-## Chain 1:                0.523 seconds (Total)
+## Chain 1:  Elapsed Time: 0.235 seconds (Warm-up)
+## Chain 1:                0.252 seconds (Sampling)
+## Chain 1:                0.487 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;AR1model&#39; NOW (CHAIN 2).
@@ -259,9 +259,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 0.247 seconds (Warm-up)
-## Chain 2:                0.264 seconds (Sampling)
-## Chain 2:                0.511 seconds (Total)
+## Chain 2:  Elapsed Time: 0.264 seconds (Warm-up)
+## Chain 2:                0.265 seconds (Sampling)
+## Chain 2:                0.529 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code>estimated_ar_select_model &lt;- sampling(Basic_AR_Select_Lag, 
                                data = mod_data_select, 
@@ -288,9 +288,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 0.232 seconds (Warm-up)
-## Chain 1:                0.225 seconds (Sampling)
-## Chain 1:                0.457 seconds (Total)
+## Chain 1:  Elapsed Time: 0.234 seconds (Warm-up)
+## Chain 1:                0.198 seconds (Sampling)
+## Chain 1:                0.432 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;AR-K-model&#39; NOW (CHAIN 2).
@@ -313,9 +313,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 0.245 seconds (Warm-up)
-## Chain 2:                0.23 seconds (Sampling)
-## Chain 2:                0.475 seconds (Total)
+## Chain 2:  Elapsed Time: 0.238 seconds (Warm-up)
+## Chain 2:                0.227 seconds (Sampling)
+## Chain 2:                0.465 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code># Show Results: True alpha = 0, true beta = .5, true sigma = 1
 
@@ -325,12 +325,12 @@ print(estimated_ar_model)</code></pre>
 ## post-warmup draws per chain=1000, total post-warmup draws=2000.
 ## 
 ##          mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
-## alpha   -0.06    0.00 0.04   -0.15   -0.09   -0.06   -0.03    0.02  1803    1
-## beta     0.43    0.00 0.04    0.35    0.41    0.43    0.46    0.51  1815    1
-## sigma    1.02    0.00 0.03    0.96    1.00    1.02    1.04    1.08  1854    1
-## lp__  -260.37    0.04 1.24 -263.46 -260.88 -260.06 -259.46 -258.97   995    1
+## alpha    0.03    0.00 0.05   -0.06    0.00    0.03    0.06    0.12  1829    1
+## beta     0.48    0.00 0.04    0.40    0.45    0.48    0.50    0.55  1750    1
+## sigma    1.00    0.00 0.03    0.94    0.98    1.00    1.02    1.07  1591    1
+## lp__  -248.86    0.04 1.31 -252.11 -249.51 -248.50 -247.88 -247.41  1049    1
 ## 
-## Samples were drawn using NUTS(diag_e) at Thu Oct 21 17:30:42 2021.
+## Samples were drawn using NUTS(diag_e) at Thu Oct 21 17:38:47 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
@@ -340,12 +340,12 @@ print(estimated_ar_model)</code></pre>
 ## post-warmup draws per chain=1000, total post-warmup draws=2000.
 ## 
 ##            mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
-## alpha     -0.06    0.00 0.04   -0.15   -0.09   -0.06   -0.03    0.02  2223    1
-## beta[1]    0.43    0.00 0.04    0.35    0.41    0.43    0.46    0.51  2038    1
-## sigma      1.02    0.00 0.03    0.96    1.00    1.02    1.04    1.09  1696    1
-## lp__    -260.37    0.04 1.21 -263.38 -260.88 -260.09 -259.51 -258.99  1071    1
+## alpha      0.03    0.00 0.04   -0.05    0.00    0.03    0.06    0.12  2018    1
+## beta[1]    0.48    0.00 0.04    0.40    0.45    0.48    0.50    0.55  2489    1
+## sigma      1.00    0.00 0.03    0.94    0.98    1.00    1.02    1.06  1979    1
+## lp__    -248.74    0.04 1.21 -252.03 -249.22 -248.43 -247.86 -247.38  1139    1
 ## 
-## Samples were drawn using NUTS(diag_e) at Thu Oct 21 17:30:44 2021.
+## Samples were drawn using NUTS(diag_e) at Thu Oct 21 17:38:48 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>

@@ -158,7 +158,7 @@ parameters {
 
 ```
 
-The *parameter block* for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).
+The *parameters block* for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).
 
 ```{stan output.var="ARModAutopar", eval=FALSE}
 parameters {
