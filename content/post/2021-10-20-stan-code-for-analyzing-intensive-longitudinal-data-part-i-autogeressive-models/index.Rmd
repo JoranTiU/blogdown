@@ -24,20 +24,22 @@ image:
 projects: []
 ---
 
-Over the years I wrote, collected, spliced together, and "stole" (but lets call it borrowed) a lot of code for analyzing intensive longitudinal data (ILD). I was always very happy to have good example code that I could change for my own needs (the "[STAN-forum](https://discourse.mc-stan.org)" and Michael Betancourt's "[case studies](https://betanalpha.github.io/writing/)" are just two examples of priceless sources for this). In the spirit of paying it forward, I thought it would be a good idea to write a series of posts in which I share by ILD related STAN model code, including accompanying explanations of what each part of the code does and some simulations to explain/show its functioning. In this series I will share and discuss my STAN model-code, I will write a separate series with R-code for data-wrangling, visualisation, etc.
+Over the years I wrote, collected, spliced together, and "stole" (but lets call it borrowed) a lot of code for analyzing intensive longitudinal data (ILD). I was always very happy to have good example code that I could change for my own needs (the "[STAN-forum](https://discourse.mc-stan.org)" and Michael Betancourt's "[case studies](https://betanalpha.github.io/writing/)" are just two examples of priceless sources for this). In the spirit of paying it forward, I thought it would be a good idea to write a series of posts in which I share by ILD related STAN model code, including accompanying explanations of what each part of the code does and some simulations to explain/show its functioning. In this series I will share and discuss my STAN model-code, I will write a separate series with R-code for data-wrangling, visualization, etc.
 
 As this STAN-code series goes on, I'll share all my STAN model-code, including code for multilevel Vector Autoregressive (VAR) Models (with random covariance matrices), code that can handle missing data, code for within-chain parallelization that greatly speeds up simulations, code with Cholesky decompositions that help with the stability of your code, and more. To start simple however, and to get a feel for this blogging thing I'll start with some basic STAN-code for the humble first-order autoregressive (AR(1)) model, the workhorse of a lot of more advanced analyses methods for ILD. This model is also the model I started my journey with many years ago, so it feels like a suitable first entry.
 
 These posts will all share a similar structure in which I first give the full model code, followed with a more chunk by chunk discussion of the model and simulations that show what the code does.
 
-Allright! Almost ready to begin. I just wanted to add that this is the code that I use. My own personal little Frankensteins. There are undoubtedly ways to make the code more efficient and elegant, and if you would like to comment on the code and suggests improvements, please do! I'll update the posts accordingly (and give full credit offcourse!). 
+Alright! Almost ready to begin. I just wanted to add that this is the code that I use. My own personal little Frankensteins. There are undoubtedly ways to make the code more efficient and elegant, and if you would like to comment on the code and suggests improvements, please do! I'll update the posts accordingly (and give full credit off course!). 
 
 Now let's get started....everyone, let me introduce the AR(1) model!
+
+
 
 ## The complete model code
 
 
-Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the "no frills" version of the code:
+Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the "no frills" version of the code, and it already runs fast enough anyway:
 
 ```{stan output.var="ARModAuto", eval=FALSE}
 
@@ -105,9 +107,10 @@ model {
 Now, you can either copy and paste the code and be off, or read on below for some explanation of the code.
 
 
+
 ## But what does it all mean?!
 
-STAN code is very (veeeery) strucured. This takes some getting used to, but I ended up liking it (although I still curse it from time to time). For a very thorough discussion of the STAN language and block structure chech out this amazing "[intro](https://betanalpha.github.io/assets/case_studies/stan_intro.html#1_prologue)" by Michael Betancourt. I'll only describe the block and elements that are actually in this model. First up, the data block.
+STAN code is very (veeeery) structured. This takes some getting used to, but I ended up liking it (although I still curse it from time to time). For a very thorough discussion of the STAN language and block structure check out this amazing "[intro](https://betanalpha.github.io/assets/case_studies/stan_intro.html#1_prologue)" by Michael Betancourt. I'll only describe the block and elements that are actually in this model. First up, the *data block*.
 
 ```{stan output.var="ARModdat", eval=FALSE}
 
@@ -119,7 +122,7 @@ data {
 
 ```
 
-As you probably guessed, the data block is where you specify the variables (and their characteristics) that you specified outside of STAN, and that you are using as input to your model. Here, I specify the number of total observations N, and the vector with all N observations of my outcome variable (y). Note that in the data block I explicitly mention that N is an integer and y is a vector. As I said, the STAN model code is very structured and you have to specify the type of all your data (and parameters). I also specify a lower bound for the value of N (the number of observations can't be smaller than 0), to prevent me from accidentally providing weird data to the model. I would created these in R before calling the STAN-model using:
+As you probably guessed, the *data block* is where you specify the variables (and their characteristics) that you specified outside of STAN, and that you are using as input to your model. Here, I specify the number of total observations N, and the vector with all N observations of my outcome variable (y). Note that in the *data block* I explicitly mention that N is an integer and y is a vector. As I said, the STAN model code is very structured and you have to specify the type of all your data (and parameters). I also specify a lower bound for the value of N (the number of observations can't be smaller than 0), to prevent me from accidentally providing weird data to the model. I would create the data in R before calling the STAN-model using:
 
 ```{r, message = F, warning = F}
 N = 500
@@ -142,7 +145,7 @@ y <- arima.sim(list(order=c(1,0,0), ar=.5), n=N)
 K <- 1
 ```
 
-Next is the parameters block. Here you specify all the parameters of you model, for this model an intercept (alpha), an AR-parameter (beta), and the standard deviation of the residuals (sigma). As for the data, you have to specify the type for your parameters (here the type of all parameters is real, since they are all continuous variables). I also specify a lower bound for my standard deviation (sigma) and an upper and lower bound for my AR-parameter (beta). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.
+Next is the *parameters block*. Here you specify all the parameters of your model, here an intercept (alpha), an AR-parameter (beta), and the standard deviation of the residuals (sigma). As for the data, you have to specify the type for your parameters (here the type of all parameters is real, since they are all continuous variables). I also specify a lower bound for my standard deviation (sigma) and an upper and lower bound for my AR-parameter (beta). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.
 
 ```{stan output.var="ARModpar", eval=FALSE}
 
@@ -155,7 +158,7 @@ parameters {
 
 ```
 
-The parameter block for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).
+The *parameter block* for the model in which you can choose the lag is almost the same, but now you would have to specify an AR parameter for each lag in your model (i.e., 1 parameter for an AR(1) model, 2 parameters for an AR(2) model, etc). To that end, beta is not a real valued scalar in that model but a vector containing a number of values that is equal to the lag (K).
 
 ```{stan output.var="ARModAutopar", eval=FALSE}
 parameters {
@@ -166,7 +169,7 @@ parameters {
 
 ```
 
-Finally, the model block. This is where you specify your full Bayesian model, the priors for your parameters and the observational model for your data. I'm using normal priors for my intercept and AR-parameter, and a half-normal prior for my SD. Note that I put a normal distribution on sigma, but since I specified it should be larger than 0 in the parameters block, STAN turns this into a half-normal distribution (did I already mention STAN is awesome?). For my outcome variable y, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (beta). Note that I can't use the first observation on y, as there is no previous observation that I can use as a predictor for the first observation.
+Finally, the *model block*. This is where you specify your full Bayesian model; the priors for your parameters and the observational model for your data. I'm using weakly informative normal priors for my intercept and AR-parameter, and a weakly informative half-normal prior for my SD. The specific values for these priors are chose based on the fact that many measures in social sciences use 5 or 7-point Likert-scales. You could also specify priors for a standardized scale and standardize your variables as part of the model, that way you don't have to change the priors for each new data set. I'll show this approach in an upcoming post. Note that while I say I use a half-normal prior on sigma, I actually put a normal distribution on this parameter. However, since I specified sigma should be larger than 0 in the *parameters block*, STAN turns this into a half-normal distribution (did I already mention STAN is awesome?!). For my outcome variable y, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (beta). Note that I can't use the first observation on y, as there is no previous observation that I can use as a predictor for the first observation.
 
 ```{stan output.var="ARModmod", eval=FALSE}
 
@@ -206,15 +209,17 @@ model {
 
 ```
 
-Basically, I cut my observational model up into two parts. First I specify an empty model for y, that just contains the intercept alpha (this is what I do in the first line within the first for-loop). In this first for-loop I specify a new "ghost" parameter, mu, that is real valued. It's a ghost variable in the sense that it is not really a model variable, and I only use it to conveniently add a not previously determined number of lags to my observational model (my likelihood) of y. It's function will become apparent shortly. In a separate second step I add the part of my observational model that predicts an observation using previous scores. This is what is happening in the nested for-loop. Notice how I can neatly cut a likelihood up into parts using the "+=" operator. That operator add the expression to the right of it to the likelihood that was already specified for the parameter on the left-side of the operator. This is the purpose of my ghost parameter mu! I want to add the entire expression of the AR model to the likelihood of y, but since the number of lagged term is not predetermined, I could not simple write out the code in the STAN-file. Instead, I add the intercept to the likelihood first (through the ghost variable mu), and then add as much lagged terms to the likelihood as needed/specified. The ghost variable mu can subsequently be specified as the mean of the normal density of y, and it will contain all relevant lagged effects as well as the intercept. 
+Basically, I cut my observational model up into two parts. First I specify an empty model for y, that just contains the intercept alpha (this is what I do in the first line within the first for-loop). In this first for-loop I specify a new "ghost" parameter, mu, that is real valued. It's a "ghost" parameter in the sense that it is not really a model parameter, and I only use it to conveniently add a not previously determined number of lags to my observational model (my likelihood) of y. It's function will become apparent shortly. Also note that I have to ignore the first K observations. If I use a lag of 2, I can't use the first two observations in my data since these don't have two prior observations that can be used a predictors. In a separate second step I add the part of my observational model that predicts an observation using previous scores. This is what is happening in the nested for-loop. Notice that I can neatly cut a likelihood up into parts using the "+=" operator. That operator add the expression to the right of it to the likelihood that was already specified for the parameter on the left-side of the operator. This is the way my "ghost" parameter mu is used! I want to add the entire expression of the AR model to the likelihood of y, but since the number of lagged terms is not predetermined, I could not simple write out the code in the STAN-file. Instead, I add the intercept to the likelihood first (through the "ghost" parameter mu), and then add as much lagged terms to the likelihood as needed/specified by looping over the code. The "ghost" parameter mu can subsequently be specified as the mean of the normal density of y, and it will contain all relevant lagged effects as well as the intercept. 
 
-Note that my model part ends with an empty line! This is because STAN always wnat the last line of the model code to be blank.
+Note that my model part ends with an empty line! This is because STAN always want the last line of the model code to be blank.
 
 That's it for the STAN-code, let's quickly simulate some data in R and see if the code gives accurate estimates. 
 
+
+
 ## Testing the code
 
-I tend to use cmdstan as my R-interface for STAN, but below I'll just use rstan. 
+I tend to use *cmdstan* as my R-interface for STAN, but below I'll use *rstan*. 
 
 
 ```{r, message = F, warning = F}
@@ -275,8 +280,12 @@ print(estimated_ar_select_model)
 
 ```
 
-As you can see, both model accurately estimate the parameters. 
+The true values of alpha, beta, and sigma, are 0, .5, and 1 respectively, and as you can see both models accurately estimate the parameter values. 
+
+
 
 ## That's All Folks
 
 That's it for this first installment of my series of posts on STAN-code for models often used with ILD. I hope you liked it! And if you have any suggestions and/or improvements, please let me know!
+
+Next up, a multilevel AR(1) Model!
