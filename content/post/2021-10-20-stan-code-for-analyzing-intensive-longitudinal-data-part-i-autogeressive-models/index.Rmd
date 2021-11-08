@@ -49,14 +49,14 @@ data {
   vector[N] y;
 }
 
-// The parameters accepted by the model. Our model accepts two parameters 'mu' and 'sigma'.
+// The parameters accepted by the model. 
 parameters {
   real alpha;
   real<lower=-1, upper=1> beta;
   real<lower=0> sigma;
 }
 
-// The model to be estimated. We model the output 'y' to be normally distributed with mean 'mu'
+// The model to be estimated. We model the output 'y' to be normally distributed with mean 'alpha + beta * y[n-1]'
 // and standard deviation 'sigma'.
 model {
   alpha ~ normal(0, 5);
@@ -80,7 +80,7 @@ data {
   real y[N];
 }
 
-// The parameters accepted by the model. Our model accepts two parameters 'mu' and 'sigma'.
+// The parameters accepted by the model. 
 parameters {
   real alpha;
   real<lower=-1, upper=1> beta[K];
@@ -122,7 +122,7 @@ data {
 
 ```
 
-As you probably guessed, the *data block* is where you specify the variables (and their characteristics) that you specified outside of STAN, and that you are using as input to your model. Here, I specify the number of total observations N, and the vector with all N observations of my outcome variable (y). Note that in the *data block* I explicitly mention that N is an integer and y is a vector. As I said, the STAN model code is very structured and you have to specify the type of all your data (and parameters). I also specify a lower bound for the value of N (the number of observations can't be smaller than 0), to prevent me from accidentally providing weird data to the model. I would create the data in R before calling the STAN-model using:
+As you probably guessed, the *data block* is where you specify the variables (and their characteristics) that you specified outside of STAN, and that you are using as input to your model. Here, I specify the number of total observations N, and the vector with all N observations of my outcome variable (y). Note that in the *data block* I explicitly mention that N is an integer and y is a vector. As I said, the STAN model code is very structured and you have to specify the type of all your data (and parameters). I also specify a lower bound for the value of N (the number of observations can't be smaller than 0), to prevent me from accidentally providing weird data to the model. If you want to generate data for this model in R, I would do that (before calling the STAN-model) by running the code below:
 
 ```{r, message = F, warning = F}
 N = 500
@@ -149,7 +149,7 @@ Next is the *parameters block*. Here you specify all the parameters of your mode
 
 ```{stan output.var="ARModpar", eval=FALSE}
 
-// The parameters accepted by the model. Our model accepts two parameters 'mu' and 'sigma'.
+// The parameters accepted by the model. 
 parameters {
   real alpha;
   real<lower=-1, upper=1> beta;
@@ -173,7 +173,7 @@ Finally, the *model block*. This is where you specify your full Bayesian model; 
 
 ```{stan output.var="ARModmod", eval=FALSE}
 
-// The model to be estimated. We model the output 'y' to be normally distributed with mean 'mu'
+// The model to be estimated. We model the output 'y' to be normally distributed with mean 'alpha + beta * y[n-1]'
 // and standard deviation 'sigma'.
 model {
   alpha ~ normal(0, 5);

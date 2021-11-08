@@ -1,0 +1,567 @@
+---
+title: 'STAN Code for Analyzing Intensive Longitudinal Data: Part IIa - Hierarchical
+  Autogeressive Models'
+author: Joran Jongerling
+date: '2021-11-02'
+slug: STAN-Hierarchical-AR
+categories: []
+tags:
+  - Bayesian
+  - STAN
+  - AR
+  - ILD
+  - R
+  - tutorial
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2021-11-02T16:54:50+01:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+Welcome to the second installment of my series in which I share (and explain) all of my intensive longitudinal data (ILD) related STAN model-code. In my previous "[post](https://experienced-sampler.netlify.app/post/stan-ar/)" I wrote about the first-order autoregressive (AR(1)) model, the workhorse of a lot of more advanced analyses methods for ILD. This was a nicer appetizer, at least I hope so, but we need to look at extensions of this model for you to get STAN model-code that you might actually need for your data. So let's take a look at .... the *hierarchical* first-order autoregressive models!
+
+This is where the fun really begins! The hierarchical AR(1) model can be fitted to ILD of *multiple* participants, and allows for investigating between-person differences in means and/or lagged-effects. This model opens up a lot...seriously a looooot...of topics. We can use it as a jumping of point to discuss centered and non-centered parametrizations of the model (which has to do with how well/stable parameters are estimated under different conditions), individual differences in error variances, handling of missing data (one of the nice properties of hierarchical models but not done *automatically* by STAN), including measurement error, et cetera. I'm going to go into, and provide code for, all these related topics and variants of the model. Doing so in one post would be madness however, and would severely hurt the readability (which is suffering enough already), so those topics will be coming up in future posts. That also why this post is numbered as "IIa", this is just "chapter one part one" of our fun with the hierarchical first-order autoregressive model. 
+
+This post will build on the code discussed in the previous "[post](https://experienced-sampler.netlify.app/post/stan-ar/)", so be sure to check that one out if things go a bit to fast. As always the structure of this post is as follows; I give the full model code first, and then go into more chunk by chunk discussion of the model. I end with some simulations that show what the code does.
+
+All right! Let's do this! The hierarchical first-order autoregressive models everybody!! 
+
+
+
+## The complete model code
+
+
+Below is my basic STAN-code for a hierarchical AR(1) model. We can vectorize some stuff to make it a bit faster, but it runs in less than a minute on most realistic data sizes anyway, so we'll keep it simple for now, as we did for the "basic" AR model in the previous "[post](https://experienced-sampler.netlify.app/post/stan-ar/)". I did include some automatic standardization of variables (explained below) so that the specified priors can be used with data on different scales. This makes the code more broadly applicable and means you should be able to set it loose on your own data pretty much straight away (assuming for now that there are no missing data).
+
+```{stan output.var="HierAR", eval=FALSE}
+
+// The input data is a vector 'y' of length 'N', we I individuals who we measured T times for 
+// N (I*T) observations in total. We also have an indicator variable that illustrates what 
+// individual (1,..., I) data belong to, and what measurement occasion (1,..., T) the data was 
+// collected at. Data is in long-format
+data {
+  int<lower=0> N;
+  int<lower=0> I;
+  int<lower=0> T;
+  int<lower = 1, upper = I> individual[N]; 
+  int<lower = 1, upper = T> time[N]; 
+  vector[N] y;
+}
+
+transformed data {
+  vector[N] y_std;
+  real meanY;
+  real sdY;
+
+  meanY = mean(y);
+  sdY = sd(y);
+
+  y_std = (y - meanY)/sdY;
+}
+
+// The parameters accepted by the model. 
+parameters {
+  real alpha_hat;
+  real<lower = 0> alpha_scale;
+  real<lower=-1, upper=1> beta_hat;
+  real<lower = 0> beta_scale;
+  
+  vector[I] alpha;
+  vector<lower=-1, upper=1>[I] beta;
+  real<lower=0> sigma;
+  
+  
+}
+
+// The model to be estimated. We model the output 'y_std[n]' to be normally distributed with mean 
+//'alpha[n] + beta[n] * y_c[n-1]' and standard deviation 'sigma'. We use the group-mean centered
+// values of y as predictors so that alpha gives us individual means instead of intercepts.
+model {
+  vector[N] y_c;
+   
+  alpha_hat ~ normal(0, 5);
+  beta_hat ~ normal(0, .5);
+  
+  alpha_scale ~ normal(0, 1);
+  beta_scale ~ normal(0, 1);
+  sigma ~ normal(0, 2);
+  
+  
+  for(i in 1:I) {
+    alpha[i] ~ normal(alpha_hat, alpha_scale);
+    
+    beta[i] ~ normal(beta_hat, beta_scale);
+    
+    }
+  
+  
+  y_c[1] =  y_std[1] - alpha[individual[1]]; 
+  
+  for (n in 2:N){
+  
+   y_c[n] = y_std[n] - alpha[individual[n]];  
+    
+   if (time[n] > 1)
+      y_std[n] ~ normal(alpha[individual[n]] + beta[individual[n]] * y_c[n-1], sigma);
+  }
+}
+
+generated quantities {
+  vector[I] alphas_ind;
+  
+  real alpha_hat_raw;
+  real<lower = 0> alpha_scale_raw; 
+  real<lower = 0>  sigma_raw; 
+  
+  alphas_ind = (sdY * alpha) + meanY;
+  alpha_hat_raw = (sdY * alpha_hat) + meanY;
+  alpha_scale_raw = sdY*alpha_scale;
+  
+  sigma_raw = sigma*sdY;
+  
+}
+
+```
+
+
+Now, you can either copy and paste the code and be off, or read on below for some explanation of the code.
+
+
+
+## But what does it all mean?!
+
+Let me just emphasize again that STAN code is very structured. For a very thorough discussion of the STAN language and block structure check out the amazing "[intro](https://betanalpha.github.io/assets/case_studies/stan_intro.html#1_prologue)" by Michael Betancourt. I'll only describe the block and elements that are actually in this model. First up, the *data block*.
+
+```{stan output.var="ARModdat", eval=FALSE}
+
+data {
+  int<lower=0> N;
+  int<lower=0> I;
+  int<lower=0> T;
+  int<lower = 1, upper = I> individual[N]; 
+  int<lower = 1, upper = T> time[N]; 
+  vector[N] y;
+}
+
+```
+
+We've seen the *data block* in the previous "[post](https://experienced-sampler.netlify.app/post/stan-ar/)" as well. In this block you specify the variables (and their characteristics) that you specified *outside* of STAN, and that you are using as input to your model. Here, the data are assumed to be in long-format and I specify (i) the number of total observations *N* in your sample (i.e., the product of the number of individuals in your sample, multiplied by the number of observations per individual), (ii) the number of individuals in your sample *I*, (iii) the number of measurements per individual *T*, (iv) a vector that indicated which individual each line of the data belongs to (*individual*), (v) a vector indicating what measurement occasion a line of data belongs to (*time*), and (vi) the vector with all N observations of my outcome variable (*y*). Note that in the *data block* I explicitly mention that *N*, *I*, *T*, *individual*, and *time* are integers and *y* is a vector. As I said, the STAN model code is very structured and you have to specify the type of all your data (and parameters). I also specify a lower bound for the value of *N*, *I*, *T*, *individual*, and *time*. The number of observations, individuals in the sample, and time points per individual can't be smaller than 0, while each line of the data need to belong to one of our *i* (i = 1, ..., I) individual and one of their *t* (t = 1, ..., T) measurements. These bounds are to prevent me from accidentally providing weird data to the model. 
+
+I you want to generate data for this model in R, you can do that with the code below. This code is a little bit more involved that the data-generation from the previous "[post](https://experienced-sampler.netlify.app/post/stan-ar/)", but don't worry! I'll explain it all!
+
+```{r, message = F, warning = F}
+I <- 100
+t <- 50
+N <- I*t
+individual <- rep(1:I, each = t)
+time <- rep(1:t, I)
+
+# True values for data generation
+sigma <- 1 # sd's of Y residuals 
+
+alpha_hat <- 4 
+alpha_scale <- 1 
+
+alphas <- rnorm(I,alpha_hat, alpha_scale) 
+
+
+beta_hat <- .4 
+beta_scale <- .1 
+
+betaGen <- rnorm(I,beta_hat, beta_scale)
+
+for(i in 1:I){
+  # The while loop avoids non-stationary AR processes
+  # See Hamilton  pg. 259
+  while(betaGen[i] <= -1 | betaGen[i] >= 1){
+    betaGen[i] <- rnorm(1,beta_hat, beta_scale)
+  }
+}
+
+betas <- betaGen
+
+# Determine first observations for everyone. The variance for this first observation is different
+# than for the subsequent ones and so it needs to be samples separatelty
+IndT1 <- match(unique(individual), individual)
+
+# Determine variance at first measurement for everyone (depends on their AR-parameter)
+
+sigmaT1 <- rep(NA, I)
+
+for(k in 1:I){
+sigmaT1[k] <- sigma/(1-((betas[k])^2))
+}
+
+# First create storage matrices for non-centered and centered y-scores.
+# We need centered values, because of we use person-cetered values as predictors, alpha will be
+# equal to individual means instead of individual intercepts which are less informative.
+Y <- rep(NA, N)
+Yc <- rep(NA, N)
+
+
+# Draw first observation for each individual first
+
+for(l in 1:I){
+  Y[IndT1[l]] <- rnorm(1, alphas[l], sigmaT1[l])
+  Yc[IndT1[l]] <-  Y[IndT1[l]] - alphas[l]
+}
+
+ 
+# Draw subsequent observations
+
+for(m in 1:N){
+  
+  # This if statement makes sure I dont try to predict a persons first observation which is impossible
+  # there is no measurement before the first observation and so no predictor values for that observation
+  if(time[m]>1){
+    Y[m]<- rnorm(1, (alphas[individual[m]] + betas[individual[m]]*Yc[m-1]), sigma)
+    Yc[m] <-  Y[m] - alphas[individual[m]]
+  }
+}
+
+
+```
+
+Geez!....That's a lot of generation-code isn't it! Let's discuss this code chunk by chunk as well, just like we are doing with the STAN-model. First, I specify my number of individuals (100), the number of measurements per individual (50), and the total number of observations (I*T). I also generate the vectors indicating which individual the line of data belongs to (individual) and to what measurement for that individual the line belongs (time).
+
+```{r, message = F, warning = F}
+
+I <- 100
+t <- 50
+N <- I*t
+individual <- rep(1:I, each = t)
+time <- rep(1:t, I)
+
+```
+
+Next, I specify values for the model parameters. Since this is a hierarchical model we have 7 parameters in the model: (i) the residual/error variance, (ii) the population mean of y (alpha_hat), (iii) the population sd of y (alpha_scale), (iv) the population-average lagged effects (beta_hat), (v) the population sd in the lagged-effect (beta_scale), (vi) the I individual means of y (alphas), and (vii) the I individual lagged effects (betas). For the population values (i.e., sigma, alpha_hat, alpha_scale, beta_hat, and beta_scale) we specify what values we want based o the literature. The individual means (alphas) are subsequently sampled from normal-distribution based on the population-values alpha_hat and alpha_scale. The individual lagged effect (betas) are also sample form a normal distribution using their population values (beta_hat and beta_scale) but for these parameters I use an intermediate outcome *betaGen* because I need to make sure that all lagged-effects fall between -1 and 1 to ensure stationarity. To ensure this range of scores I use a *while-loop* and only after all values fall into the intended range do I assign the values to the vector betas which will contain our true lagged-effect values.
+
+```{r, message = F, warning = F}
+
+# True values for data generation
+sigma <- 1 # sd's of Y residuals 
+
+alpha_hat <- 4 
+alpha_scale <- 1 
+
+alphas <- rnorm(I,alpha_hat, alpha_scale) 
+
+
+beta_hat <- .4 
+beta_scale <- .1 
+
+betaGen <- rnorm(I,beta_hat, beta_scale)
+
+for(i in 1:I){
+  # The while loop avoids non-stationary AR processes
+  # See Hamilton  pg. 259
+  while(betaGen[i] <= -1 | betaGen[i] >= 1){
+    betaGen[i] <- rnorm(1,beta_hat, beta_scale)
+  }
+}
+
+betas <- betaGen
+
+```
+
+Finally, I generate the data. This needs to be done in two steps! We need to generate the first measurement occasion for each individual separately form all other observations, because the variance of y at the first measurement occasion is different from the variance at all other time-points (a standard result from timeseries literature). I therefore create a vector indicating the data-lines containing the first observations for my I individuals (IndT1) first. I then determine the variance of the first measurement for each individual (which depends on their lagged-effect values), and use those variances to draw the first observations of each individual from a normal distribution. Then I draw all succesive observations for the I individuals based on a normal distribution whose mean is determined by the AR(1) model and whose sd is equal to sigma. Note that while I'm generating all observations (Y), I'm also creating a vector of person-mean centered values (Yc). The reason for this is that using person-mean centered values of y as the predictors in the hierarchical AR(1) model makes the alphas parameters equal to the *means* of each individual on y (and alpha_hat and alpha_scale equal to the population mean ans the population sd in the mean), instead of individual *intercepts* which are less easy to interpret. 
+
+```{r, message = F, warning = F}
+
+# Determine first observations for everyone. The variance for this first observation is different
+# than for the subsequent ones and so it needs to be samples separatelty
+IndT1 <- match(unique(individual), individual)
+
+# Determine variance at first measurement for everyone (depends on their AR-parameter)
+
+sigmaT1 <- rep(NA, I)
+
+for(k in 1:I){
+sigmaT1[k] <- sigma/(1-((betas[k])^2))
+}
+
+# First create storage matrices for non-centered and centered y-scores.
+# We need centered values, because of we use person-cetered values as predictors, alpha will be
+# equal to individual means instead of individual intercepts which are less informative.
+Y <- rep(NA, N)
+Yc <- rep(NA, N)
+
+
+# Draw first observation for each individual first
+
+for(l in 1:I){
+  Y[IndT1[l]] <- rnorm(1, alphas[l], sigmaT1[l])
+  Yc[IndT1[l]] <-  Y[IndT1[l]] - alphas[l]
+}
+
+ 
+# Draw subsequent observations
+
+for(m in 1:N){
+  
+  # This if statement makes sure I dont try to predict a persons first observation which is impossible
+  # there is no measurement before the first observation and so no predictor values for that observation
+  if(time[m]>1){
+    Y[m]<- rnorm(1, (alphas[individual[m]] + betas[individual[m]]*Yc[m-1]), sigma)
+    Yc[m] <-  Y[m] - alphas[individual[m]]
+  }
+}
+
+
+
+```
+
+Ok! That takes care of the *data block* and the data generation! On to the next block, which is a new one! The *transformed data* block. In the *transformed data* you can specify manipulations of your data that you want to apply before feeding the data to your model. Here I use it to standardize the data y. The reason for this is that STAN tends to run a bit quicker on standardized scales AND that by doing this I can specify priors for my parameters that can be used regardless of the actual, "raw" scale of the data. So no need to change the priors each time you use a new instrument! Instead, we specify priors that work on the standardized scale and turn every obtained scale into that standardized scale before fitting the model. When it comes to the amount of work you have to do, less is most definitely more! For the actual standardizing I specify a new vector, y_std, in which I will store all the standardized values, and specify two real valued parameters in which I will store the sample mean (meanY) and sample sd (sdY) of our variable y. Then I just apply a z-transform to all values of y. 
+
+```{stan output.var="ARModpar", eval=FALSE}
+
+transformed data {
+  vector[N] y_std;
+  real meanY;
+  real sdY;
+
+  meanY = mean(y);
+  sdY = sd(y);
+
+  y_std = (y - meanY)/sdY;
+}
+
+```
+
+
+This bring us to a familiar block again, the *parameters block*, in which we specify all the parameters of your model. As mentioned above when discussing the code for data generation, the hierarchical AR(1) model has 7 parameters; (i) the residual/error variance (sigma), (ii) the population mean of y (alpha_hat), (iii) the population sd of y (alpha_scale), (iv) the population-average lagged effects (beta_hat), (v) the population sd in the lagged-effect (beta_scale), (vi) the I individual means of y (alpha), and (vii) the I individual lagged effects (beta). As for the data, you have to specify the type for your parameters, and I also specify a lower bound for my variance parameters (sigma, alpha_scale, and beta_scale) and an upper and lower bound for my population AR-parameter (beta_hat) and the individual lagged-parameters (beta). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.
+
+```{stan output.var="ARModpar", eval=FALSE}
+
+// The parameters accepted by the model. 
+parameters {
+  real alpha_hat;
+  real<lower = 0> alpha_scale;
+  real<lower=-1, upper=1> beta_hat;
+  real<lower = 0> beta_scale;
+  
+  vector[I] alpha;
+  vector<lower=-1, upper=1>[I] beta;
+  real<lower=0> sigma;
+  
+  
+}
+
+```
+
+The *model block* is up next. This is where you specify your full Bayesian model; the priors for your parameters and the observational model for your data. I'm using weakly informative normal priors for all my parameters. Remember that these priors are on the standardized-scale(!), and (see the previous "[post](https://experienced-sampler.netlify.app/post/stan-ar/)") that the normal-priors on my variance parameters gets turned into a half-normal prior by STAN because I specified that I want these parameters to be larger than 0 in the *parameters block*. I draw individual means and AR-parameters using a *for-loop* and the population values of the means and AR-parameters.
+
+For my outcome variable y, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (beta). I use a *for-loop* to go over all N lines of data starting at the second line(!!). I start at the second line because because I can't predict the first observation (which is the first observation of the first individual in my sample) as there is no previous score to use as a predictor for this first measurement. To get valid estimates I need to make sure that individual i's individual mean (alpha[i]) and AR-parameter (beta[i]) are estimated using only her/his data. For this I use the vector indicating which individual a line of data belongs to (*individual*). Using this indicator-vector I tell my model which of the I alpha and beta values should be estimated in the current iteration of the for-loop. In addition, I use the vector indicating which measurement a line of data belongs to (*time*) to make sure that the AR(1) model is not applied to the first observation of each individual as that is impossible (as mentioned above, there is no previous observation to use as a predictor for an individuals first measurement). Finally, not the y_c vector! As mentioned above, I you use person-centered y-scores as the predictor in the AR(1) model, the parameter alpha is the individual mean instead of the individual intercept. The latter is much harder to interpret and so less nice to work with. I create the y_c values by subtracting individual alpha values from an individual's y-scores. For the first measurement (i.e., the first line of data) I need to do this manually, for all succesive lines I can do it as part of the for-loop I use to fit the AR(1) model from the second line on wards. 
+
+```{stan output.var="ARModmod", eval=FALSE}
+
+// The model to be estimated. We model the output 'y_std[n]' to be normally distributed with mean 
+//'alpha[n] + beta[n] * y_c[n-1]' and standard deviation 'sigma'. We use the group-mean centered
+// values of y as predictors so that alpha gives us individual means instead of intercepts.
+model {
+  vector[N] y_c;
+   
+  alpha_hat ~ normal(0, 5);
+  beta_hat ~ normal(0, .5);
+  
+  alpha_scale ~ normal(0, 1);
+  beta_scale ~ normal(0, 1);
+  sigma ~ normal(0, 2);
+  
+  
+  for(i in 1:I) {
+    alpha[i] ~ normal(alpha_hat, alpha_scale);
+    
+    beta[i] ~ normal(beta_hat, beta_scale);
+    
+    }
+  
+  
+  y_c[1] =  y_std[1] - alpha[individual[1]]; 
+  
+  for (n in 2:N){
+  
+   y_c[n] = y_std[n] - alpha[individual[n]];  
+    
+   if (time[n] > 1)
+      y_std[n] ~ normal(alpha[individual[n]] + beta[individual[n]] * y_c[n-1], sigma);
+  }
+}
+
+```
+
+
+Now, we're almost done. There is one issue. Because I standardized my data before entering it into the model, my estimates of alpha, alpha_hat, alpha_scale, and sigma are on the standardized scale and not on the "raw" scale of the data to which you fot the model. All parameters related to the lagged-effects are fine since you use the same variable as both dependent and independent variable. To get all parameter back on the appropriate scale, we'll use the *generated quantities* block. You can use this block to calculate quantities in each iteration of your HMC-sampler (as oposed to the *transformed data* whose transformations are applied once, before fitting the data). In this block we'll transform each draw of our standardized parameters (i.e., alpha, alpha_hat, alpha_scale, and sigma) into parameters on the original scale of the data. This basically means applying an inverse z-transform to the alpha and alpha_hat parameters in each iteration, and multiplying the alpha_scale and sigma parameters with the sample sd in each iteration. In the code below I first specify a vector, alphas_raw, in which I'll store the individual means expressed on the original scale of y, and three real-valued parameters in which I'll store the values for the population mean (alpha_hat_raw), population sd (alpha_scale_raw), and residual variance (sigma_raw) expressed on the original scale.   
+
+```{stan output.var="ARModAutomod", eval=FALSE} 
+
+generated quantities {
+  vector[I] alphas_ind;
+  
+  real alpha_hat_raw;
+  real<lower = 0> alpha_scale_raw; 
+  real<lower = 0>  sigma_raw; 
+  
+  alphas_ind = (sdY * alpha) + meanY;
+  alpha_hat_raw = (sdY * alpha_hat) + meanY;
+  alpha_scale_raw = sdY*alpha_scale;
+  
+  sigma_raw = sigma*sdY;
+  
+}
+
+```
+
+
+That's it for the STAN-code, let's quickly simulate some data in R and see if the code gives accurate estimates. 
+
+
+
+## Testing the code
+
+Lets load the required packages, use the data generation code described above, and fit out model using *rstan*. 
+To see how well the code works we'll look at parameter estimates of the population parameters, the correlation between the true- and estimated individual means and AR-parameters, and the average absolute difference between the true and estimated individual means and AR-parameters.
+
+
+```{r, message = F, warning = F}
+library(rstan)
+library(mvtnorm)
+library(tidyverse)
+
+
+HierAR <- stan_model("HierarchicalAR1model.stan")
+
+I <- 100
+t <- 50
+N <- I*t
+individual <- rep(1:I, each = t)
+time <- rep(1:t, I)
+
+set.seed(31121)
+
+# True values for data generation
+sigma <- 1 # sd's of Y residuals 
+
+alpha_hat <- 4 
+alpha_scale <- 1 
+
+alphas <- rnorm(I,alpha_hat, alpha_scale) 
+
+
+beta_hat <- .4 
+beta_scale <- .1 
+
+betaGen <- rnorm(I,beta_hat, beta_scale)
+
+for(i in 1:I){
+  # The while loop avoids non-stationary AR processes
+  # See Hamilton  pg. 259
+  while(betaGen[i] <= -1 | betaGen[i] >= 1){
+    betaGen[i] <- rnorm(1,beta_hat, beta_scale)
+  }
+}
+
+betas <- betaGen
+
+# Determine first observations for everyone. The variance for this first observation is different
+# than for the subsequent ones and so it needs to be samples separatelty
+IndT1 <- match(unique(individual), individual)
+
+# Determine variance at first measurement for everyone (depends on their AR-parameter)
+
+sigmaT1 <- rep(NA, I)
+
+for(k in 1:I){
+sigmaT1[k] <- sigma/(1-((betas[k])^2))
+}
+
+# First create storage matrices for non-centered and centered y-scores.
+# We need centered values, because of we use person-cetered values as predictors, alpha will be
+# equal to individual means instead of individual intercepts which are less informative.
+Y <- rep(NA, N)
+Yc <- rep(NA, N)
+
+
+# Draw first observation for each individual first
+
+for(l in 1:I){
+  Y[IndT1[l]] <- rnorm(1, alphas[l], sigmaT1[l])
+  Yc[IndT1[l]] <-  Y[IndT1[l]] - alphas[l]
+}
+
+ 
+# Draw subsequent observations
+
+for(m in 1:N){
+  
+  # This if statement makes sure I dont try to predict a persons first observation which is impossible
+  # there is no measurement before the first observation and so no predictor values for that observation
+  if(time[m]>1){
+    Y[m]<- rnorm(1, (alphas[individual[m]] + betas[individual[m]]*Yc[m-1]), sigma)
+    Yc[m] <-  Y[m] - alphas[individual[m]]
+  }
+}
+
+
+
+# Data send to STAN
+mod_data <- list(
+  individual = individual,
+  time = time,
+  T = t,
+  I = I,
+  N = N,
+  y = Y
+)
+  
+# Estimate the two models
+estimated_ar_model <- sampling(HierAR, 
+                               data = mod_data, 
+                               iter = 2000,
+                               chains=2)
+
+
+# Check results for population parameters
+print(estimated_ar_model, pars = c("alpha_hat_raw", "alpha_scale_raw", "beta_hat", "beta_scale", "sigma_raw"))
+
+
+# Also check individual mean-estimates
+Ind_Mean_Est <- summary(estimated_ar_model, pars = c("alphas_ind"))
+
+# Correlation
+cor(Ind_Mean_Est$summary[,1], alphas)
+
+# Average absolute difference between estimated and true individual values
+sqrt(mean((alphas - Ind_Mean_Est$summary[,1])^2))
+
+
+# Finally check individual AR-parameters
+Ind_AR_Est <- summary(estimated_ar_model, pars = c("beta"))
+
+# Correlation
+cor(Ind_AR_Est$summary[,1], betas)
+
+# Average absolute difference between estimated and true individual values
+sqrt(mean((betas - Ind_AR_Est$summary[,1])^2))
+
+
+
+```
+
+As you can see, the population values are close to their true values of 4, 1, .4, .1, and 1 for *alpha_hat_raw*, *alpha_scale_raw*, *beta_hat*, *beta_scale*, and *sigma* respectively. The correlation between the true- and estimated individuals means is also high while the average absolute differences between the true- and estimated individual means is small given the scale of the parameter. The average absolute differences between the true- and estimated individual AR-parameters is also small given the scale of the parameter, but the correlation between the true and estimated values is on the low side. This is not a mistake in the code. With 100 individuals and only 50 observations per individual, population values are usually estimated quite well, as are individual means, but individual AR-estimates will show quite some uncertainty leading to lower correlations. So, if your goals is studying and predicting individual differences in AR-parameters, you'd do well to collect more than 50 observations per person. Simulations show that 70 - 100 observations tend to gives sufficient performance in most cases, but you should run simulations to determine your specific sample size needs in a study. 
+
+
+
+## That's All Folks
+
+That's it for this first installment on the hierarchical AR(1) model. I hope you liked it! And if you have any suggestions, comments, or questions about the code and/or the post in general, please let me know!
+
+
+Next up, dealing with missing data when fitting a hierarchical AR(1) model in STAN!
