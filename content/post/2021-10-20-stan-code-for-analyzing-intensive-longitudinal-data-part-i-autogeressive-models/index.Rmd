@@ -39,7 +39,7 @@ Now let's get started....everyone, let me introduce the AR(1) model!
 ## The complete model code
 
 
-Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the "no frills" version of the code, and it already runs fast enough anyway:
+Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the "no frills" version of the code, and it already runs fast enough anyway.
 
 ```{stan output.var="ARModAuto", eval=FALSE}
 
@@ -56,8 +56,8 @@ parameters {
   real<lower=0> sigma;
 }
 
-// The model to be estimated. We model the output 'y' to be normally distributed with mean 'alpha + beta * y[n-1]'
-// and standard deviation 'sigma'.
+// The model to be estimated. We model the output 'y' to be normally distributed 
+// with mean 'alpha + beta * y[n-1]'and standard deviation 'sigma'.
 model {
   alpha ~ normal(0, 5);
   beta ~ normal(0, .7);
@@ -87,8 +87,8 @@ parameters {
   real<lower=0> sigma;
 }
 
-// The model to be estimated. We model the output 'y' to be normally distributed with mean 'mu'
-// and standard deviation 'sigma'.
+// The model to be estimated. We model the output 'y' to be normally distributed 
+// with mean 'mu'and standard deviation 'sigma'.
 model {
   alpha ~ normal(0, 5);
   beta ~ normal(0, .7);
@@ -173,8 +173,8 @@ Finally, the *model block*. This is where you specify your full Bayesian model; 
 
 ```{stan output.var="ARModmod", eval=FALSE}
 
-// The model to be estimated. We model the output 'y' to be normally distributed with mean 'alpha + beta * y[n-1]'
-// and standard deviation 'sigma'.
+// The model to be estimated. We model the output 'y' to be normally distributed 
+// with mean 'alpha + beta * y[n-1]'and standard deviation 'sigma'.
 model {
   alpha ~ normal(0, 5);
   beta ~ normal(0, .7);
@@ -191,8 +191,8 @@ model {
 For the model in which you can specify the lag you want, the basics are the same but I include an additional loop so all the lags I want are fitted to the model. 
 
 ```{stan output.var="ARModAutomod", eval=FALSE}
-// The model to be estimated. We model the output 'y' to be normally distributed with mean 'mu'
-// and standard deviation 'sigma'.
+// The model to be estimated. We model the output 'y' to be normally distributed 
+// with mean 'mu'and standard deviation 'sigma'.
 model {
   alpha ~ normal(0, 5);
   beta ~ normal(0, .7);

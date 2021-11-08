@@ -35,10 +35,11 @@ projects: []
 <h2>The complete model code</h2>
 <p>Below is my basic STAN-code for a hierarchical AR(1) model. We can vectorize some stuff to make it a bit faster, but it runs in less than a minute on most realistic data sizes anyway, so we’ll keep it simple for now, as we did for the “basic” AR model in the previous “<a href="https://experienced-sampler.netlify.app/post/stan-ar/">post</a>”. I did include some automatic standardization of variables (explained below) so that the specified priors can be used with data on different scales. This makes the code more broadly applicable and means you should be able to set it loose on your own data pretty much straight away (assuming for now that there are no missing data).</p>
 <pre class="stan"><code>
-// The input data is a vector &#39;y&#39; of length &#39;N&#39;, we I individuals who we measured T times for 
-// N (I*T) observations in total. We also have an indicator variable that illustrates what 
-// individual (1,..., I) data belong to, and what measurement occasion (1,..., T) the data was 
-// collected at. Data is in long-format
+// The input data is a vector &#39;y&#39; of length &#39;N&#39;, we I individuals who we 
+// measured T times for N (I*T) observations in total. We also have an indicator 
+// variable that illustrates what individual (1,..., I) data belong to, and what 
+// measurement occasion (1,..., T) the data was collected at. 
+// Data is in long-format
 data {
   int&lt;lower=0&gt; N;
   int&lt;lower=0&gt; I;
@@ -73,9 +74,10 @@ parameters {
   
 }
 
-// The model to be estimated. We model the output &#39;y_std[n]&#39; to be normally distributed with mean 
-//&#39;alpha[n] + beta[n] * y_c[n-1]&#39; and standard deviation &#39;sigma&#39;. We use the group-mean centered
-// values of y as predictors so that alpha gives us individual means instead of intercepts.
+// The model to be estimated. We model the output &#39;y_std[n]&#39; to be normally 
+// distributed with mean &#39;alpha[n] + beta[n] * y_c[n-1]&#39; and standard deviation
+// &#39;sigma&#39;. We use the group-mean centered values of y as predictors so that 
+// alpha gives us individual means instead of intercepts.
 model {
   vector[N] y_c;
    
@@ -168,11 +170,13 @@ for(i in 1:I){
 
 betas &lt;- betaGen
 
-# Determine first observations for everyone. The variance for this first observation is different
-# than for the subsequent ones and so it needs to be samples separatelty
+# Determine first observations for everyone. The variance for this first 
+# observation is different than for the subsequent ones and so it needs to be 
+# samples separatelty
 IndT1 &lt;- match(unique(individual), individual)
 
-# Determine variance at first measurement for everyone (depends on their AR-parameter)
+# Determine variance at first measurement for everyone (depends on their 
+# AR-parameter)
 
 sigmaT1 &lt;- rep(NA, I)
 
@@ -181,8 +185,9 @@ sigmaT1[k] &lt;- sigma/(1-((betas[k])^2))
 }
 
 # First create storage matrices for non-centered and centered y-scores.
-# We need centered values, because of we use person-cetered values as predictors, alpha will be
-# equal to individual means instead of individual intercepts which are less informative.
+# We need centered values, because of we use person-cetered values as 
+# predictors, alpha will be equal to individual means instead of individual 
+# intercepts which are less informative.
 Y &lt;- rep(NA, N)
 Yc &lt;- rep(NA, N)
 
@@ -199,8 +204,9 @@ for(l in 1:I){
 
 for(m in 1:N){
   
-  # This if statement makes sure I dont try to predict a persons first observation which is impossible
-  # there is no measurement before the first observation and so no predictor values for that observation
+  # This if statement makes sure I dont try to predict a persons first 
+  # observation which is impossiblethere is no measurement before the first 
+  # observation and so no predictor values for that observation
   if(time[m]&gt;1){
     Y[m]&lt;- rnorm(1, (alphas[individual[m]] + betas[individual[m]]*Yc[m-1]), sigma)
     Yc[m] &lt;-  Y[m] - alphas[individual[m]]
@@ -212,7 +218,7 @@ t &lt;- 50
 N &lt;- I*t
 individual &lt;- rep(1:I, each = t)
 time &lt;- rep(1:t, I)</code></pre>
-<p>Next, I specify values for the model parameters. Since this is a hierarchical model we have 7 parameters in the model: (i) the residual/error variance, (ii) the population mean of y (alpha_hat), (iii) the population sd of y (alpha_scale), (iv) the population-average lagged effects (beta_hat), (v) the population sd in the lagged-effect (beta_scale), (vi) the I individual means of y (alphas), and (vii) the I individual lagged effects (betas). For the population values (i.e., sigma, alpha_hat, alpha_scale, beta_hat, and beta_scale) we specify what values we want based o the literature. The individual means (alphas) are subsequently sampled from normal-distribution based on the population-values alpha_hat and alpha_scale. The individual lagged effect (betas) are also sample form a normal distribution using their population values (beta_hat and beta_scale) but for these parameters I use an intermediate outcome <em>betaGen</em> because I need to make sure that all lagged-effects fall between -1 and 1 to ensure stationarity. To ensure this range of scores I use a <em>while-loop</em> and only after all values fall into the intended range do I assign the values to the vector betas which will contain our true lagged-effect values.</p>
+<p>Next, I specify values for the model parameters. Since this is a hierarchical model we have 7 parameters in the model: (i) the residual/error variance, (ii) the population mean of y (<em>alpha_hat</em>), (iii) the population sd of y (<em>alpha_scale</em>), (iv) the population-average lagged effects (<em>beta_hat</em>), (v) the population sd in the lagged-effect (<em>beta_scale</em>), (vi) the I individual means of y (<em>alphas</em>), and (vii) the I individual lagged effects (<em>betas</em>). For the population values (i.e., <em>sigma</em>, <em>alpha_hat</em>, <em>alpha_scale</em>, <em>beta_hat</em>, and <em>beta_scale</em>) we specify what values we want based on the literature. The individual means (<em>alphas</em>) are subsequently sampled from normal-distribution based on the population-values <em>alpha_hat</em> and <em>alpha_scale</em>. The individual lagged effect (<em>betas</em>) are also sample form a normal distribution using their population values (<em>beta_hat</em> and <em>beta_scale</em>) but for these parameters I use an intermediate outcome <em>betaGen</em> because I need to make sure that all lagged-effects fall between -1 and 1 to ensure stationarity. To ensure this range of scores I use a <em>while-loop</em> and only after all values fall into the intended range do I assign the values to the vector betas which will contain our true lagged-effect values.</p>
 <pre class="r"><code># True values for data generation
 sigma &lt;- 1 # sd&#39;s of Y residuals 
 
@@ -236,12 +242,14 @@ for(i in 1:I){
 }
 
 betas &lt;- betaGen</code></pre>
-<p>Finally, I generate the data. This needs to be done in two steps! We need to generate the first measurement occasion for each individual separately form all other observations, because the variance of y at the first measurement occasion is different from the variance at all other time-points (a standard result from timeseries literature). I therefore create a vector indicating the data-lines containing the first observations for my I individuals (IndT1) first. I then determine the variance of the first measurement for each individual (which depends on their lagged-effect values), and use those variances to draw the first observations of each individual from a normal distribution. Then I draw all succesive observations for the I individuals based on a normal distribution whose mean is determined by the AR(1) model and whose sd is equal to sigma. Note that while I’m generating all observations (Y), I’m also creating a vector of person-mean centered values (Yc). The reason for this is that using person-mean centered values of y as the predictors in the hierarchical AR(1) model makes the alphas parameters equal to the <em>means</em> of each individual on y (and alpha_hat and alpha_scale equal to the population mean ans the population sd in the mean), instead of individual <em>intercepts</em> which are less easy to interpret.</p>
-<pre class="r"><code># Determine first observations for everyone. The variance for this first observation is different
-# than for the subsequent ones and so it needs to be samples separatelty
+<p>Finally, I generate the data. This needs to be done in two steps! We need to generate the first measurement occasion for each individual separately form all other observations, because the variance of y at the first measurement occasion is different from the variance at all other time-points (a standard result from timeseries literature). I therefore create a vector indicating the data-lines containing the first observations for my I individuals (<em>IndT1</em>) first. I then determine the variance of the first measurement for each individual (which depends on their lagged-effect values), and use those variances to draw the first observations of each individual from a normal distribution. Then I draw all successive observations for the I individuals based on a normal distribution whose mean is determined by the AR(1) model and whose sd is equal to sigma. Note that while I’m generating all observations (<em>Y</em>), I’m also creating a vector of person-mean centered values (<em>Yc</em>). The reason for this is that using person-mean centered values of y as the predictors in the hierarchical AR(1) model makes the alphas parameters equal to the <em>means</em> of each individual on y (and alpha_hat and alpha_scale equal to the population mean ans the population sd in the mean), instead of individual <em>intercepts</em> which are less easy to interpret.</p>
+<pre class="r"><code># Determine first observations for everyone. The variance for this first 
+# observation is different than for the subsequent ones and so it needs to be 
+# samples separatelty
 IndT1 &lt;- match(unique(individual), individual)
 
-# Determine variance at first measurement for everyone (depends on their AR-parameter)
+# Determine variance at first measurement for everyone (depends on their 
+# AR-parameter)
 
 sigmaT1 &lt;- rep(NA, I)
 
@@ -250,8 +258,9 @@ sigmaT1[k] &lt;- sigma/(1-((betas[k])^2))
 }
 
 # First create storage matrices for non-centered and centered y-scores.
-# We need centered values, because of we use person-cetered values as predictors, alpha will be
-# equal to individual means instead of individual intercepts which are less informative.
+# We need centered values, because of we use person-cetered values as 
+# predictors, alpha will be equal to individual means instead of individual 
+# intercepts which are less informative.
 Y &lt;- rep(NA, N)
 Yc &lt;- rep(NA, N)
 
@@ -268,14 +277,15 @@ for(l in 1:I){
 
 for(m in 1:N){
   
-  # This if statement makes sure I dont try to predict a persons first observation which is impossible
-  # there is no measurement before the first observation and so no predictor values for that observation
+  # This if statement makes sure I don&#39;t try to predict a persons first 
+  # observation which is impossible there is no measurement before the first 
+  # observation and so no predictor values for that observation
   if(time[m]&gt;1){
     Y[m]&lt;- rnorm(1, (alphas[individual[m]] + betas[individual[m]]*Yc[m-1]), sigma)
     Yc[m] &lt;-  Y[m] - alphas[individual[m]]
   }
 }</code></pre>
-<p>Ok! That takes care of the <em>data block</em> and the data generation! On to the next block, which is a new one! The <em>transformed data</em> block. In the <em>transformed data</em> you can specify manipulations of your data that you want to apply before feeding the data to your model. Here I use it to standardize the data y. The reason for this is that STAN tends to run a bit quicker on standardized scales AND that by doing this I can specify priors for my parameters that can be used regardless of the actual, “raw” scale of the data. So no need to change the priors each time you use a new instrument! Instead, we specify priors that work on the standardized scale and turn every obtained scale into that standardized scale before fitting the model. When it comes to the amount of work you have to do, less is most definitely more! For the actual standardizing I specify a new vector, y_std, in which I will store all the standardized values, and specify two real valued parameters in which I will store the sample mean (meanY) and sample sd (sdY) of our variable y. Then I just apply a z-transform to all values of y.</p>
+<p>Ok! That takes care of the <em>data block</em> and the data generation! On to the next block, which is a new one! The <em>transformed data</em> block. In the <em>transformed data</em> you can specify manipulations of your data that you want to apply before feeding the data to your model. Here I use it to standardize the data y. The reason for this is that STAN tends to run a bit quicker on standardized scales AND that by doing this I can specify priors for my parameters that can be used regardless of the actual, “raw” scale of the data. So no need to change the priors each time you use a new instrument! Instead, we specify priors that work on the standardized scale and turn every obtained scale into that standardized scale before fitting the model. When it comes to the amount of work you have to do, less is most definitely more! For the actual standardizing I specify a new vector, <em>y_std</em>, in which I will store all the standardized values, and specify two real valued parameters in which I will store the sample mean (<em>meanY</em>) and sample sd (<em>sdY</em>) of our variable <em>y</em>. Then I just apply a z-transform to all values of <em>y</em>.</p>
 <pre class="stan"><code>
 transformed data {
   vector[N] y_std;
@@ -288,7 +298,7 @@ transformed data {
   y_std = (y - meanY)/sdY;
 }
 </code></pre>
-<p>This bring us to a familiar block again, the <em>parameters block</em>, in which we specify all the parameters of your model. As mentioned above when discussing the code for data generation, the hierarchical AR(1) model has 7 parameters; (i) the residual/error variance (sigma), (ii) the population mean of y (alpha_hat), (iii) the population sd of y (alpha_scale), (iv) the population-average lagged effects (beta_hat), (v) the population sd in the lagged-effect (beta_scale), (vi) the I individual means of y (alpha), and (vii) the I individual lagged effects (beta). As for the data, you have to specify the type for your parameters, and I also specify a lower bound for my variance parameters (sigma, alpha_scale, and beta_scale) and an upper and lower bound for my population AR-parameter (beta_hat) and the individual lagged-parameters (beta). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.</p>
+<p>This bring us to a familiar block again, the <em>parameters block</em>, in which we specify all the parameters of your model. As mentioned above when discussing the code for data generation, the hierarchical AR(1) model has 7 parameters; (i) the residual/error variance (<em>sigma</em>), (ii) the population mean of y (<em>alpha_hat</em>), (iii) the population sd of y (<em>alpha_scale</em>), (iv) the population-average lagged effects (<em>beta_hat</em>), (v) the population sd in the lagged-effect (<em>beta_scale</em>), (vi) the I individual means of y (<em>alpha</em>), and (vii) the I individual lagged effects (<em>beta</em>). As for the data, you have to specify the type for your parameters, and I also specify a lower bound for my variance parameters (<em>sigma</em>, <em>alpha_scale</em>, and <em>beta_scale</em>) and an upper and lower bound for my population AR-parameter (<em>beta_hat</em>) and the individual lagged-parameters (<em>beta</em>). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.</p>
 <pre class="stan"><code>
 // The parameters accepted by the model. 
 parameters {
@@ -305,11 +315,12 @@ parameters {
 }
 </code></pre>
 <p>The <em>model block</em> is up next. This is where you specify your full Bayesian model; the priors for your parameters and the observational model for your data. I’m using weakly informative normal priors for all my parameters. Remember that these priors are on the standardized-scale(!), and (see the previous “<a href="https://experienced-sampler.netlify.app/post/stan-ar/">post</a>”) that the normal-priors on my variance parameters gets turned into a half-normal prior by STAN because I specified that I want these parameters to be larger than 0 in the <em>parameters block</em>. I draw individual means and AR-parameters using a <em>for-loop</em> and the population values of the means and AR-parameters.</p>
-<p>For my outcome variable y, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (beta). I use a <em>for-loop</em> to go over all N lines of data starting at the second line(!!). I start at the second line because because I can’t predict the first observation (which is the first observation of the first individual in my sample) as there is no previous score to use as a predictor for this first measurement. To get valid estimates I need to make sure that individual i’s individual mean (alpha[i]) and AR-parameter (beta[i]) are estimated using only her/his data. For this I use the vector indicating which individual a line of data belongs to (<em>individual</em>). Using this indicator-vector I tell my model which of the I alpha and beta values should be estimated in the current iteration of the for-loop. In addition, I use the vector indicating which measurement a line of data belongs to (<em>time</em>) to make sure that the AR(1) model is not applied to the first observation of each individual as that is impossible (as mentioned above, there is no previous observation to use as a predictor for an individuals first measurement). Finally, not the y_c vector! As mentioned above, I you use person-centered y-scores as the predictor in the AR(1) model, the parameter alpha is the individual mean instead of the individual intercept. The latter is much harder to interpret and so less nice to work with. I create the y_c values by subtracting individual alpha values from an individual’s y-scores. For the first measurement (i.e., the first line of data) I need to do this manually, for all succesive lines I can do it as part of the for-loop I use to fit the AR(1) model from the second line on wards.</p>
+<p>For my outcome variable <em>y</em>, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (<em>beta</em>). I use a <em>for-loop</em> to go over all <em>N</em> lines of data starting at the second line(!!). I start at the second line because because I can’t predict the first observation (which is the first observation of the first individual in my sample) as there is no previous score to use as a predictor for this first measurement. To get valid estimates I need to make sure that individual i’s individual mean (<em>alpha[i]</em>) and AR-parameter (<em>beta[i]</em>) are estimated using only her/his data. For this I use the vector indicating which individual a line of data belongs to (<em>individual</em>). Using this indicator-vector I tell my model which of the <em>I</em> alpha and beta values should be estimated in the current iteration of the for-loop. In addition, I use the vector indicating which measurement a line of data belongs to (<em>time</em>) to make sure that the AR(1) model is not applied to the first observation of each individual as that is impossible (as mentioned above, there is no previous observation to use as a predictor for an individuals first measurement). Finally, not the <em>y_c</em> vector! As mentioned above, I you use person-centered y-scores as the predictor in the AR(1) model, the parameter alpha is the individual mean instead of the individual intercept. The latter is much harder to interpret and so less nice to work with. I create the <em>y_c</em> values by subtracting individual alpha values from an individual’s <em>y-scores</em>. For the first measurement (i.e., the first line of data) I need to do this manually, for all successive lines I can do it as part of the <em>for-loop</em> I use to fit the AR(1) model from the second line on wards.</p>
 <pre class="stan"><code>
-// The model to be estimated. We model the output &#39;y_std[n]&#39; to be normally distributed with mean 
-//&#39;alpha[n] + beta[n] * y_c[n-1]&#39; and standard deviation &#39;sigma&#39;. We use the group-mean centered
-// values of y as predictors so that alpha gives us individual means instead of intercepts.
+// The model to be estimated. We model the output &#39;y_std[n]&#39; to be normally 
+// distributed with mean &#39;alpha[n] + beta[n] * y_c[n-1]&#39; and standard deviation 
+// &#39;sigma&#39;. We use the group-mean centered values of y as predictors so that 
+// alpha gives us individual means instead of intercepts.
 model {
   vector[N] y_c;
    
@@ -340,7 +351,7 @@ model {
   }
 }
 </code></pre>
-<p>Now, we’re almost done. There is one issue. Because I standardized my data before entering it into the model, my estimates of alpha, alpha_hat, alpha_scale, and sigma are on the standardized scale and not on the “raw” scale of the data to which you fot the model. All parameters related to the lagged-effects are fine since you use the same variable as both dependent and independent variable. To get all parameter back on the appropriate scale, we’ll use the <em>generated quantities</em> block. You can use this block to calculate quantities in each iteration of your HMC-sampler (as oposed to the <em>transformed data</em> whose transformations are applied once, before fitting the data). In this block we’ll transform each draw of our standardized parameters (i.e., alpha, alpha_hat, alpha_scale, and sigma) into parameters on the original scale of the data. This basically means applying an inverse z-transform to the alpha and alpha_hat parameters in each iteration, and multiplying the alpha_scale and sigma parameters with the sample sd in each iteration. In the code below I first specify a vector, alphas_raw, in which I’ll store the individual means expressed on the original scale of y, and three real-valued parameters in which I’ll store the values for the population mean (alpha_hat_raw), population sd (alpha_scale_raw), and residual variance (sigma_raw) expressed on the original scale.</p>
+<p>Now, we’re almost done. There is one issue. Because I standardized my data before entering it into the model, my estimates of <em>alpha</em>, <em>alpha_hat</em>, <em>alpha_scale</em>, and <em>sigma</em> are on the standardized scale and not on the “raw” scale of the data to which you fot the model. All parameters related to the lagged-effects are fine since you use the same variable as both dependent and independent variable. To get all parameter back on the appropriate scale, we’ll use the <em>generated quantities</em> block. You can use this block to calculate quantities in each iteration of your HMC-sampler (as opposed to the <em>transformed data</em> whose transformations are applied once, before fitting the data). In this block we’ll transform each draw of our standardized parameters (i.e., <em>alpha</em>, <em>alpha_hat</em>, <em>alpha_scale</em>, and <em>sigma</em>) into parameters on the original scale of the data. This basically means applying an inverse z-transform to the <em>alpha</em> and <em>alpha_hat</em> parameters in each iteration, and multiplying the <em>alpha_scale</em> and <em>sigma</em> parameters with the sample sd in each iteration. In the code below I first specify a vector, <em>alphas_raw</em>, in which I’ll store the individual means expressed on the original scale of <em>y</em>, and three real-valued parameters in which I’ll store the values for the population mean (<em>alpha_hat_raw</em>), population sd (<em>alpha_scale_raw</em>), and residual variance (<em>sigma_raw</em>) expressed on the original scale.</p>
 <pre class="stan"><code>
 generated quantities {
   vector[I] alphas_ind;
@@ -402,11 +413,13 @@ for(i in 1:I){
 
 betas &lt;- betaGen
 
-# Determine first observations for everyone. The variance for this first observation is different
-# than for the subsequent ones and so it needs to be samples separatelty
+# Determine first observations for everyone. The variance for this first 
+# observation is different than for the subsequent ones and so it needs to be 
+# samples separatelty
 IndT1 &lt;- match(unique(individual), individual)
 
-# Determine variance at first measurement for everyone (depends on their AR-parameter)
+# Determine variance at first measurement for everyone (depends on their 
+# AR-parameter)
 
 sigmaT1 &lt;- rep(NA, I)
 
@@ -415,8 +428,9 @@ sigmaT1[k] &lt;- sigma/(1-((betas[k])^2))
 }
 
 # First create storage matrices for non-centered and centered y-scores.
-# We need centered values, because of we use person-cetered values as predictors, alpha will be
-# equal to individual means instead of individual intercepts which are less informative.
+# We need centered values, because of we use person-cetered values as predictors, 
+# alpha will be equal to individual means instead of individual intercepts 
+# which are less informative.
 Y &lt;- rep(NA, N)
 Yc &lt;- rep(NA, N)
 
@@ -433,8 +447,9 @@ for(l in 1:I){
 
 for(m in 1:N){
   
-  # This if statement makes sure I dont try to predict a persons first observation which is impossible
-  # there is no measurement before the first observation and so no predictor values for that observation
+  # This if statement makes sure I don&#39;t try to predict a persons first 
+  # observation which is impossible there is no measurement before the first 
+  # observation and so no predictor values for that observation
   if(time[m]&gt;1){
     Y[m]&lt;- rnorm(1, (alphas[individual[m]] + betas[individual[m]]*Yc[m-1]), sigma)
     Yc[m] &lt;-  Y[m] - alphas[individual[m]]
@@ -461,8 +476,8 @@ estimated_ar_model &lt;- sampling(HierAR,
 <pre><code>## 
 ## SAMPLING FOR MODEL &#39;HierarchicalAR1model&#39; NOW (CHAIN 1).
 ## Chain 1: 
-## Chain 1: Gradient evaluation took 0.001 seconds
-## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 10 seconds.
+## Chain 1: Gradient evaluation took 0.002 seconds
+## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 20 seconds.
 ## Chain 1: Adjust your expectations accordingly!
 ## Chain 1: 
 ## Chain 1: 
@@ -479,9 +494,9 @@ estimated_ar_model &lt;- sampling(HierAR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 25.349 seconds (Warm-up)
-## Chain 1:                17.088 seconds (Sampling)
-## Chain 1:                42.437 seconds (Total)
+## Chain 1:  Elapsed Time: 25.541 seconds (Warm-up)
+## Chain 1:                17.229 seconds (Sampling)
+## Chain 1:                42.77 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;HierarchicalAR1model&#39; NOW (CHAIN 2).
@@ -504,9 +519,9 @@ estimated_ar_model &lt;- sampling(HierAR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 25.099 seconds (Warm-up)
-## Chain 2:                17.333 seconds (Sampling)
-## Chain 2:                42.432 seconds (Total)
+## Chain 2:  Elapsed Time: 25.653 seconds (Warm-up)
+## Chain 2:                17.373 seconds (Sampling)
+## Chain 2:                43.026 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code># Check results for population parameters
 print(estimated_ar_model, pars = c(&quot;alpha_hat_raw&quot;, &quot;alpha_scale_raw&quot;, &quot;beta_hat&quot;, &quot;beta_scale&quot;, &quot;sigma_raw&quot;))</code></pre>
@@ -521,7 +536,7 @@ print(estimated_ar_model, pars = c(&quot;alpha_hat_raw&quot;, &quot;alpha_scale_
 ## beta_scale      0.11       0 0.02 0.07 0.10 0.11 0.12  0.15   302 1.02
 ## sigma_raw       1.01       0 0.01 0.99 1.00 1.01 1.01  1.03  3720 1.00
 ## 
-## Samples were drawn using NUTS(diag_e) at Mon Nov 08 15:27:22 2021.
+## Samples were drawn using NUTS(diag_e) at Mon Nov 08 15:51:31 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
