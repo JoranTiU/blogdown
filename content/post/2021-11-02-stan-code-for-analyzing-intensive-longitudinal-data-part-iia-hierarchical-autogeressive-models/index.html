@@ -1,6 +1,6 @@
 ---
 title: 'STAN Code for Analyzing Intensive Longitudinal Data: Part IIa - Hierarchical
-  Autogeressive Models'
+  Autoregressive Models'
 author: Joran Jongerling
 date: '2021-11-02'
 slug: STAN-Hierarchical-AR
@@ -28,7 +28,7 @@ projects: []
 
 
 <p>Welcome to the second installment of my series in which I share (and explain) all of my intensive longitudinal data (ILD) related STAN model-code. In my previous “<a href="https://experienced-sampler.netlify.app/post/stan-ar/">post</a>” I wrote about the first-order autoregressive (AR(1)) model, the workhorse of a lot of more advanced analyses methods for ILD. This was a nicer appetizer, at least I hope so, but we need to look at extensions of this model for you to get STAN model-code that you might actually need for your data. So let’s take a look at …. the <em>hierarchical</em> first-order autoregressive models!</p>
-<p>This is where the fun really begins! The hierarchical AR(1) model can be fitted to ILD of <em>multiple</em> participants, and allows for investigating between-person differences in means and/or lagged-effects. This model opens up a lot…seriously a looooot…of topics. We can use it as a jumping of point to discuss centered and non-centered parametrizations of the model (which has to do with how well/stable parameters are estimated under different conditions), individual differences in error variances, handling of missing data (one of the nice properties of hierarchical models but not done <em>automatically</em> by STAN), including measurement error, et cetera. I’m going to go into, and provide code for, all these related topics and variants of the model. Doing so in one post would be madness however, and would severely hurt the readability (which is suffering enough already), so those topics will be coming up in future posts. That also why this post is numbered as “IIa”, this is just “chapter one part one” of our fun with the hierarchical first-order autoregressive model.</p>
+<p>This is where the fun really begins! The hierarchical AR(1) model can be fitted to ILD of <em>multiple</em> participants, and allows for investigating between-person differences in means and/or lagged-effects. This model opens up a lot…seriously a looooot…of topics. We can use it as a jumping of point to discuss centered and non-centered parametrizations of the model (which has to do with how well/stable parameters are estimated under different conditions), individual differences in error variances, handling of missing data (one of the nice properties of hierarchical models but not done <em>automatically</em> by STAN), including measurement error, etcetera. I’m going to go into, and provide code for, all these related topics and variants of the model. Doing so in one post would be madness however, and would severely hurt the readability (which is suffering enough already), so those topics will be coming up in future posts. That also why this post is numbered as “IIa”, this is just “chapter one part one” of our fun with the hierarchical first-order autoregressive model.</p>
 <p>This post will build on the code discussed in the previous “<a href="https://experienced-sampler.netlify.app/post/stan-ar/">post</a>”, so be sure to check that one out if things go a bit to fast. As always the structure of this post is as follows; I give the full model code first, and then go into more chunk by chunk discussion of the model. I end with some simulations that show what the code does.</p>
 <p>All right! Let’s do this! The hierarchical first-order autoregressive models everybody!!</p>
 <div id="the-complete-model-code" class="section level2">
@@ -476,8 +476,8 @@ estimated_ar_model &lt;- sampling(HierAR,
 <pre><code>## 
 ## SAMPLING FOR MODEL &#39;HierarchicalAR1model&#39; NOW (CHAIN 1).
 ## Chain 1: 
-## Chain 1: Gradient evaluation took 0.002 seconds
-## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 20 seconds.
+## Chain 1: Gradient evaluation took 0.003 seconds
+## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 30 seconds.
 ## Chain 1: Adjust your expectations accordingly!
 ## Chain 1: 
 ## Chain 1: 
@@ -494,15 +494,15 @@ estimated_ar_model &lt;- sampling(HierAR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 25.541 seconds (Warm-up)
-## Chain 1:                17.229 seconds (Sampling)
-## Chain 1:                42.77 seconds (Total)
+## Chain 1:  Elapsed Time: 31.178 seconds (Warm-up)
+## Chain 1:                19.676 seconds (Sampling)
+## Chain 1:                50.854 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;HierarchicalAR1model&#39; NOW (CHAIN 2).
 ## Chain 2: 
-## Chain 2: Gradient evaluation took 0.001 seconds
-## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 10 seconds.
+## Chain 2: Gradient evaluation took 0.002 seconds
+## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 20 seconds.
 ## Chain 2: Adjust your expectations accordingly!
 ## Chain 2: 
 ## Chain 2: 
@@ -519,9 +519,9 @@ estimated_ar_model &lt;- sampling(HierAR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 25.653 seconds (Warm-up)
-## Chain 2:                17.373 seconds (Sampling)
-## Chain 2:                43.026 seconds (Total)
+## Chain 2:  Elapsed Time: 29.615 seconds (Warm-up)
+## Chain 2:                18.995 seconds (Sampling)
+## Chain 2:                48.61 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code># Check results for population parameters
 print(estimated_ar_model, pars = c(&quot;alpha_hat_raw&quot;, &quot;alpha_scale_raw&quot;, &quot;beta_hat&quot;, &quot;beta_scale&quot;, &quot;sigma_raw&quot;))</code></pre>
@@ -536,7 +536,7 @@ print(estimated_ar_model, pars = c(&quot;alpha_hat_raw&quot;, &quot;alpha_scale_
 ## beta_scale      0.11       0 0.02 0.07 0.10 0.11 0.12  0.15   302 1.02
 ## sigma_raw       1.01       0 0.01 0.99 1.00 1.01 1.01  1.03  3720 1.00
 ## 
-## Samples were drawn using NUTS(diag_e) at Mon Nov 08 15:51:31 2021.
+## Samples were drawn using NUTS(diag_e) at Tue Nov 09 09:37:42 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
