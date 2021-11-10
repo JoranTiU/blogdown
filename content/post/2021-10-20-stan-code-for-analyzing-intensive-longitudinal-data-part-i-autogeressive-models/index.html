@@ -27,13 +27,24 @@ projects: []
 <script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
+<div id="table-of-contents" class="section level1">
+<h1>Table of Contents</h1>
+<ol style="list-style-type: decimal">
+<li><a href="#completemodel">The Complete Model</a></li>
+<li><a href="#explanation">But What Does it all Mean?</a>
+1.<a href="#data">The Data Block and Data-generation</a>
+2.<a href="#parameters">The Parameters Block</a>
+3.<a href="#model">The Model Block</a></li>
+<li><a href="#testing">Testing the Code</a></li>
+<li><a href="#taf">That’s all Folks!!</a></li>
+</ol>
 <p>Over the years I wrote, collected, spliced together, and “stole” (but lets call it borrowed) a lot of code for analyzing intensive longitudinal data (ILD). I was always very happy to have good example code that I could change for my own needs (the “<a href="https://discourse.mc-stan.org">STAN-forum</a>” and Michael Betancourt’s “<a href="https://betanalpha.github.io/writing/">case studies</a>” are just two examples of priceless sources for this). In the spirit of paying it forward, I thought it would be a good idea to write a series of posts in which I share by ILD related STAN model code, including accompanying explanations of what each part of the code does and some simulations to explain/show its functioning. In this series I will share and discuss my STAN model-code, I will write a separate series with R-code for data-wrangling, visualization, etc.</p>
 <p>As this STAN-code series goes on, I’ll share all my STAN model-code, including code for multilevel Vector Autoregressive (VAR) Models (with random covariance matrices), code that can handle missing data, code for within-chain parallelization that greatly speeds up simulations, code with Cholesky decompositions that help with the stability of your code, and more. To start simple however, and to get a feel for this blogging thing I’ll start with some basic STAN-code for the humble first-order autoregressive (AR(1)) model, the workhorse of a lot of more advanced analyses methods for ILD. This model is also the model I started my journey with many years ago, so it feels like a suitable first entry.</p>
 <p>These posts will all share a similar structure in which I first give the full model code, followed with a more chunk by chunk discussion of the model and simulations that show what the code does.</p>
 <p>Alright! Almost ready to begin. I just wanted to add that this is the code that I use. My own personal little Frankensteins. There are undoubtedly ways to make the code more efficient and elegant, and if you would like to comment on the code and suggests improvements, please do! I’ll update the posts accordingly (and give full credit off course!).</p>
 <p>Now let’s get started….everyone, let me introduce the AR(1) model!</p>
 <div id="the-complete-model-code" class="section level2">
-<h2>The complete model code</h2>
+<h2>The complete model code <a name="completemodel"></a></h2>
 <p>Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the “no frills” version of the code, and it already runs fast enough anyway.</p>
 <pre class="stan"><code>
 // The input data is a vector &#39;y&#39; of length &#39;N&#39;.
@@ -94,7 +105,9 @@ model {
 <p>Now, you can either copy and paste the code and be off, or read on below for some explanation of the code.</p>
 </div>
 <div id="but-what-does-it-all-mean" class="section level2">
-<h2>But what does it all mean?!</h2>
+<h2>But what does it all mean?! <a name="explanation"></a></h2>
+<div id="the-data-block-and-data-generation" class="section level3">
+<h3>The Data Block and Data-generation <a name="data"></a></h3>
 <p>STAN code is very (veeeery) structured. This takes some getting used to, but I ended up liking it (although I still curse it from time to time). For a very thorough discussion of the STAN language and block structure check out this amazing “<a href="https://betanalpha.github.io/assets/case_studies/stan_intro.html#1_prologue">intro</a>” by Michael Betancourt. I’ll only describe the block and elements that are actually in this model. First up, the <em>data block</em>.</p>
 <pre class="stan"><code>
 // The input data is a vector &#39;y&#39; of length &#39;N&#39;.
@@ -117,6 +130,9 @@ y &lt;- arima.sim(list(order=c(1,0,0), ar=.5), n=N)
 # If you want a mean different than 0, 5 for example, run: y &lt;- y + 5  
 
 K &lt;- 1</code></pre>
+</div>
+<div id="the-parameters-block" class="section level3">
+<h3>The Parameters Block <a name="parameters"></a></h3>
 <p>Next is the <em>parameters block</em>. Here you specify all the parameters of your model, here an intercept (alpha), an AR-parameter (beta), and the standard deviation of the residuals (sigma). As for the data, you have to specify the type for your parameters (here the type of all parameters is real, since they are all continuous variables). I also specify a lower bound for my standard deviation (sigma) and an upper and lower bound for my AR-parameter (beta). This last constraint reflects that I want my model to be stationary which requires the AR-parameter to be between -1 and 1. Draws that fall outside of this range will be rejected.</p>
 <pre class="stan"><code>
 // The parameters accepted by the model. 
@@ -133,6 +149,9 @@ parameters {
   real&lt;lower=0&gt; sigma;
 }
 </code></pre>
+</div>
+<div id="the-model-block" class="section level3">
+<h3>The Model Block <a name="model"></a></h3>
 <p>Finally, the <em>model block</em>. This is where you specify your full Bayesian model; the priors for your parameters and the observational model for your data. I’m using weakly informative normal priors for my intercept and AR-parameter, and a weakly informative half-normal prior for my SD. The specific values for these priors are chose based on the fact that many measures in social sciences use 5 or 7-point Likert-scales. You could also specify priors for a standardized scale and standardize your variables as part of the model, that way you don’t have to change the priors for each new data set. I’ll show this approach in an upcoming post. Note that while I say I use a half-normal prior on sigma, I actually put a normal distribution on this parameter. However, since I specified sigma should be larger than 0 in the <em>parameters block</em>, STAN turns this into a half-normal distribution (did I already mention STAN is awesome?!). For my outcome variable y, I specify the standard AR(1) model in which each observation is regressed on the immediate prior observation using the AR-parameter (beta). Note that I can’t use the first observation on y, as there is no previous observation that I can use as a predictor for the first observation.</p>
 <pre class="stan"><code>
 // The model to be estimated. We model the output &#39;y&#39; to be normally distributed 
@@ -168,8 +187,9 @@ model {
 <p>Note that my model part ends with an empty line! This is because STAN always want the last line of the model code to be blank.</p>
 <p>That’s it for the STAN-code, let’s quickly simulate some data in R and see if the code gives accurate estimates.</p>
 </div>
+</div>
 <div id="testing-the-code" class="section level2">
-<h2>Testing the code</h2>
+<h2>Testing the code <a name="testing"></a></h2>
 <p>I tend to use <em>cmdstan</em> as my R-interface for STAN, but below I’ll use <em>rstan</em>.</p>
 <pre class="r"><code># Load the necessary package
 library(rstan)
@@ -234,9 +254,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 0.285 seconds (Warm-up)
-## Chain 1:                0.269 seconds (Sampling)
-## Chain 1:                0.554 seconds (Total)
+## Chain 1:  Elapsed Time: 0.256 seconds (Warm-up)
+## Chain 1:                0.263 seconds (Sampling)
+## Chain 1:                0.519 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;AR1model&#39; NOW (CHAIN 2).
@@ -259,9 +279,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 0.251 seconds (Warm-up)
-## Chain 2:                0.288 seconds (Sampling)
-## Chain 2:                0.539 seconds (Total)
+## Chain 2:  Elapsed Time: 0.278 seconds (Warm-up)
+## Chain 2:                0.258 seconds (Sampling)
+## Chain 2:                0.536 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code>estimated_ar_select_model &lt;- sampling(Basic_AR_Select_Lag, 
                                data = mod_data_select, 
@@ -288,9 +308,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 0.273 seconds (Warm-up)
-## Chain 1:                0.277 seconds (Sampling)
-## Chain 1:                0.55 seconds (Total)
+## Chain 1:  Elapsed Time: 0.267 seconds (Warm-up)
+## Chain 1:                0.251 seconds (Sampling)
+## Chain 1:                0.518 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;AR-K-model&#39; NOW (CHAIN 2).
@@ -313,9 +333,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 0.24 seconds (Warm-up)
-## Chain 2:                0.245 seconds (Sampling)
-## Chain 2:                0.485 seconds (Total)
+## Chain 2:  Elapsed Time: 0.26 seconds (Warm-up)
+## Chain 2:                0.214 seconds (Sampling)
+## Chain 2:                0.474 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code># Show Results: True alpha = 0, true beta = .5, true sigma = 1
 
@@ -325,12 +345,12 @@ print(estimated_ar_model)</code></pre>
 ## post-warmup draws per chain=1000, total post-warmup draws=2000.
 ## 
 ##          mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
-## alpha    0.04    0.00 0.04   -0.05    0.01    0.04    0.07    0.12  2217    1
-## beta     0.49    0.00 0.04    0.41    0.47    0.49    0.52    0.57  1899    1
-## sigma    0.93    0.00 0.03    0.88    0.91    0.93    0.95    0.99  1835    1
-## lp__  -216.52    0.05 1.27 -219.81 -217.05 -216.20 -215.60 -215.11   755    1
+## alpha    0.01    0.00 0.05   -0.08   -0.02    0.01    0.05    0.10  2138    1
+## beta     0.50    0.00 0.04    0.43    0.48    0.50    0.53    0.58  1564    1
+## sigma    0.98    0.00 0.03    0.92    0.96    0.98    1.00    1.04  2074    1
+## lp__  -238.47    0.05 1.29 -241.71 -239.08 -238.12 -237.53 -237.00   810    1
 ## 
-## Samples were drawn using NUTS(diag_e) at Mon Nov 08 15:49:13 2021.
+## Samples were drawn using NUTS(diag_e) at Wed Nov 10 15:15:03 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
@@ -340,19 +360,20 @@ print(estimated_ar_model)</code></pre>
 ## post-warmup draws per chain=1000, total post-warmup draws=2000.
 ## 
 ##            mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
-## alpha      0.04    0.00 0.04   -0.04    0.01    0.04    0.07    0.12  1559    1
-## beta[1]    0.49    0.00 0.04    0.41    0.47    0.49    0.52    0.57  1798    1
-## sigma      0.93    0.00 0.03    0.88    0.91    0.93    0.95    0.99  1782    1
-## lp__    -216.51    0.04 1.23 -219.68 -217.10 -216.19 -215.59 -215.08   858    1
+## alpha      0.01    0.00 0.04   -0.07   -0.01    0.02    0.04    0.10  1972 1.00
+## beta[1]    0.50    0.00 0.04    0.43    0.47    0.50    0.53    0.58  2218 1.00
+## sigma      0.98    0.00 0.03    0.92    0.96    0.98    1.00    1.04  2546 1.00
+## lp__    -238.33    0.04 1.16 -241.30 -238.86 -238.04 -237.48 -236.99   920 1.01
 ## 
-## Samples were drawn using NUTS(diag_e) at Mon Nov 08 15:49:15 2021.
+## Samples were drawn using NUTS(diag_e) at Wed Nov 10 15:15:04 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
 <p>The true values of alpha, beta, and sigma, are 0, .5, and 1 respectively, and as you can see both models accurately estimate the parameter values.</p>
 </div>
 <div id="thats-all-folks" class="section level2">
-<h2>That’s All Folks</h2>
+<h2>That’s All Folks <a name="taf"></a></h2>
 <p>That’s it for this first installment of my series of posts on STAN-code for models often used with ILD. I hope you liked it! And if you have any suggestions and/or improvements, please let me know!</p>
 <p>Next up, a multilevel AR(1) Model!</p>
+</div>
 </div>
