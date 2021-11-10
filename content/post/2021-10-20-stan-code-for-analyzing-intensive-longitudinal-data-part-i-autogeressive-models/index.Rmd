@@ -27,13 +27,9 @@ projects: []
 # Table of Contents
 1. [The Complete Model](#completemodel)
 2. [But What Does it all Mean?](#explanation)
-
   1.[The Data Block and Data-generation](#data)
-  
   2.[The Parameters Block](#parameters)
-  
   3.[The Model Block](#model)
-  
 3. [Testing the Code](#testing)
 4. [That's all Folks!!](#taf)
 
