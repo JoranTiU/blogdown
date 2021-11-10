@@ -27,9 +27,13 @@ projects: []
 # Table of Contents
 1. [The Complete Model](#completemodel)
 2. [But What Does it all Mean?](#explanation)
+
   1.[The Data Block and Data-generation](#data)
+  
   2.[The Parameters Block](#parameters)
+  
   3.[The Model Block](#model)
+  
 3. [Testing the Code](#testing)
 4. [That's all Folks!!](#taf)
 
@@ -46,7 +50,7 @@ Now let's get started....everyone, let me introduce the AR(1) model!
 
 
 
-### The complete model code <a name="completemodel"></a>
+# The complete model code <a name="completemodel"></a>
 
 
 Below is my basic STAN-code for the AR(1) model. We can vectorize some stuff to make it a bit faster, but this is the "no frills" version of the code, and it already runs fast enough anyway.
@@ -118,7 +122,7 @@ Now, you can either copy and paste the code and be off, or read on below for som
 
 
 
-### But what does it all mean?! <a name="explanation"></a>
+# But what does it all mean?! <a name="explanation"></a>
 
 ## The Data Block and Data-generation <a name="data"></a>
 
@@ -233,7 +237,7 @@ That's it for the STAN-code, let's quickly simulate some data in R and see if th
 
 
 
-### Testing the code <a name="testing"></a>
+# Testing the code <a name="testing"></a>
 
 I tend to use *cmdstan* as my R-interface for STAN, but below I'll use *rstan*. 
 
@@ -300,7 +304,7 @@ The true values of alpha, beta, and sigma, are 0, .5, and 1 respectively, and as
 
 
 
-### That's All Folks <a name="taf"></a>
+# That's All Folks <a name="taf"></a>
 
 That's it for this first installment of my series of posts on STAN-code for models often used with ILD. I hope you liked it! And if you have any suggestions and/or improvements, please let me know!
 
