@@ -30,14 +30,18 @@ projects: []
 <div id="table-of-contents" class="section level1">
 <h1>Table of Contents</h1>
 <ol style="list-style-type: decimal">
+<li><a href="#intro">Introduction</a></li>
 <li><a href="#completemodel">The Complete Model</a></li>
-<li><a href="#explanation">But What Does it all Mean?</a>
-1.<a href="#data">The Data Block and Data-generation</a>
-2.<a href="#parameters">The Parameters Block</a>
+<li><a href="#explanation">But What Does it all Mean?</a><br />
+1.<a href="#data">The Data Block and Data-generation</a><br />
+2.<a href="#parameters">The Parameters Block</a><br />
 3.<a href="#model">The Model Block</a></li>
 <li><a href="#testing">Testing the Code</a></li>
 <li><a href="#taf">That’s all Folks!!</a></li>
 </ol>
+</div>
+<div id="introduction" class="section level1">
+<h1>Introduction <a name="intro"></a></h1>
 <p>Over the years I wrote, collected, spliced together, and “stole” (but lets call it borrowed) a lot of code for analyzing intensive longitudinal data (ILD). I was always very happy to have good example code that I could change for my own needs (the “<a href="https://discourse.mc-stan.org">STAN-forum</a>” and Michael Betancourt’s “<a href="https://betanalpha.github.io/writing/">case studies</a>” are just two examples of priceless sources for this). In the spirit of paying it forward, I thought it would be a good idea to write a series of posts in which I share by ILD related STAN model code, including accompanying explanations of what each part of the code does and some simulations to explain/show its functioning. In this series I will share and discuss my STAN model-code, I will write a separate series with R-code for data-wrangling, visualization, etc.</p>
 <p>As this STAN-code series goes on, I’ll share all my STAN model-code, including code for multilevel Vector Autoregressive (VAR) Models (with random covariance matrices), code that can handle missing data, code for within-chain parallelization that greatly speeds up simulations, code with Cholesky decompositions that help with the stability of your code, and more. To start simple however, and to get a feel for this blogging thing I’ll start with some basic STAN-code for the humble first-order autoregressive (AR(1)) model, the workhorse of a lot of more advanced analyses methods for ILD. This model is also the model I started my journey with many years ago, so it feels like a suitable first entry.</p>
 <p>These posts will all share a similar structure in which I first give the full model code, followed with a more chunk by chunk discussion of the model and simulations that show what the code does.</p>
@@ -255,9 +259,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 0.281 seconds (Warm-up)
-## Chain 1:                0.284 seconds (Sampling)
-## Chain 1:                0.565 seconds (Total)
+## Chain 1:  Elapsed Time: 0.26 seconds (Warm-up)
+## Chain 1:                0.263 seconds (Sampling)
+## Chain 1:                0.523 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;AR1model&#39; NOW (CHAIN 2).
@@ -280,9 +284,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 0.242 seconds (Warm-up)
-## Chain 2:                0.26 seconds (Sampling)
-## Chain 2:                0.502 seconds (Total)
+## Chain 2:  Elapsed Time: 0.256 seconds (Warm-up)
+## Chain 2:                0.263 seconds (Sampling)
+## Chain 2:                0.519 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code>estimated_ar_select_model &lt;- sampling(Basic_AR_Select_Lag, 
                                data = mod_data_select, 
@@ -309,9 +313,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 0.25 seconds (Warm-up)
-## Chain 1:                0.254 seconds (Sampling)
-## Chain 1:                0.504 seconds (Total)
+## Chain 1:  Elapsed Time: 0.249 seconds (Warm-up)
+## Chain 1:                0.263 seconds (Sampling)
+## Chain 1:                0.512 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;AR-K-model&#39; NOW (CHAIN 2).
@@ -334,9 +338,9 @@ estimated_ar_model &lt;- sampling(Basic_AR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 0.243 seconds (Warm-up)
-## Chain 2:                0.247 seconds (Sampling)
-## Chain 2:                0.49 seconds (Total)
+## Chain 2:  Elapsed Time: 0.245 seconds (Warm-up)
+## Chain 2:                0.221 seconds (Sampling)
+## Chain 2:                0.466 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code># Show Results: True alpha = 0, true beta = .5, true sigma = 1
 
@@ -346,12 +350,12 @@ print(estimated_ar_model)</code></pre>
 ## post-warmup draws per chain=1000, total post-warmup draws=2000.
 ## 
 ##          mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
-## alpha   -0.08    0.00 0.05   -0.17   -0.12   -0.08   -0.05    0.01  1917    1
-## beta     0.46    0.00 0.04    0.38    0.44    0.46    0.49    0.54  2001    1
-## sigma    1.06    0.00 0.03    1.00    1.04    1.06    1.08    1.13  2090    1
-## lp__  -279.43    0.04 1.22 -282.55 -279.93 -279.12 -278.54 -278.02   935    1
+## alpha    0.02    0.00 0.05   -0.07   -0.01    0.02    0.05    0.11  2076    1
+## beta     0.44    0.00 0.04    0.36    0.41    0.44    0.47    0.52  1832    1
+## sigma    1.02    0.00 0.03    0.96    0.99    1.02    1.04    1.08  1925    1
+## lp__  -257.86    0.04 1.30 -261.34 -258.41 -257.49 -256.92 -256.43   914    1
 ## 
-## Samples were drawn using NUTS(diag_e) at Wed Nov 10 18:17:24 2021.
+## Samples were drawn using NUTS(diag_e) at Wed Nov 10 18:38:22 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
@@ -361,12 +365,12 @@ print(estimated_ar_model)</code></pre>
 ## post-warmup draws per chain=1000, total post-warmup draws=2000.
 ## 
 ##            mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
-## alpha     -0.09    0.00 0.05   -0.18   -0.12   -0.09   -0.05    0.01  1761    1
-## beta[1]    0.46    0.00 0.04    0.39    0.44    0.46    0.49    0.54  1756    1
-## sigma      1.06    0.00 0.03    1.00    1.04    1.06    1.08    1.13  2021    1
-## lp__    -279.38    0.04 1.23 -282.48 -279.92 -279.08 -278.47 -278.01   917    1
+## alpha      0.02    0.00 0.04   -0.07   -0.01    0.02    0.05    0.11  2403    1
+## beta[1]    0.44    0.00 0.04    0.36    0.42    0.44    0.47    0.52  2026    1
+## sigma      1.02    0.00 0.03    0.96    0.99    1.01    1.04    1.08  1994    1
+## lp__    -257.77    0.04 1.17 -260.74 -258.36 -257.47 -256.90 -256.42  1046    1
 ## 
-## Samples were drawn using NUTS(diag_e) at Wed Nov 10 18:17:25 2021.
+## Samples were drawn using NUTS(diag_e) at Wed Nov 10 18:38:23 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
