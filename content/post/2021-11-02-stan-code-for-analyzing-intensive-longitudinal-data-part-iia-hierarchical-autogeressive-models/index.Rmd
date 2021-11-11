@@ -32,7 +32,7 @@ projects: []
     2.[The Transformed Data Block](#transformed)   
     3.[The Parameters Block](#parameters)   
     4.[The Model Block](#model)   
-    5.[The Transformed Quantities Block](#quantities)
+    5.[The Generated Quantities Block](#quantities)
 3. [Testing the Code](#testing)
 4. [That's all Folks!!](#taf)
    
@@ -430,7 +430,7 @@ model {
 ```
    
    
-## The Transformed Quantities Block <a name="quantities"></a>
+## The Generated Quantities Block <a name="quantities"></a>
    
 Now, we're almost done. There is one issue. Because I standardized my data before entering it into the model, my estimates of *alpha*, *alpha_hat*, *alpha_scale*, and *sigma* are on the standardized scale and not on the "raw" scale of the data to which you fot the model. All parameters related to the lagged-effects are fine since you use the same variable as both dependent and independent variable. To get all parameter back on the appropriate scale, we'll use the *generated quantities* block. You can use this block to calculate quantities in each iteration of your HMC-sampler (as opposed to the *transformed data* whose transformations are applied once, before fitting the data). In this block we'll transform each draw of our standardized parameters (i.e., *alpha*, *alpha_hat*, *alpha_scale*, and *sigma*) into parameters on the original scale of the data. This basically means applying an inverse z-transform to the *alpha* and *alpha_hat* parameters in each iteration, and multiplying the *alpha_scale* and *sigma* parameters with the sample sd in each iteration. In the code below I first specify a vector, *alphas_raw*, in which I'll store the individual means expressed on the original scale of *y*, and three real-valued parameters in which I'll store the values for the population mean (*alpha_hat_raw*), population sd (*alpha_scale_raw*), and residual variance (*sigma_raw*) expressed on the original scale.   
 

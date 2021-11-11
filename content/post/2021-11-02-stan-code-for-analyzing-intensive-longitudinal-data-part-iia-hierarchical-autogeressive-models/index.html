@@ -37,7 +37,7 @@ projects: []
 2.<a href="#transformed">The Transformed Data Block</a><br />
 3.<a href="#parameters">The Parameters Block</a><br />
 4.<a href="#model">The Model Block</a><br />
-5.<a href="#quantities">The Transformed Quantities Block</a></li>
+5.<a href="#quantities">The Generated Quantities Block</a></li>
 <li><a href="#testing">Testing the Code</a></li>
 <li><a href="#taf">That’s all Folks!!</a></li>
 </ol>
@@ -381,8 +381,8 @@ model {
 }
 </code></pre>
 </div>
-<div id="the-transformed-quantities-block" class="section level2">
-<h2>The Transformed Quantities Block <a name="quantities"></a></h2>
+<div id="the-generated-quantities-block" class="section level2">
+<h2>The Generated Quantities Block <a name="quantities"></a></h2>
 <p>Now, we’re almost done. There is one issue. Because I standardized my data before entering it into the model, my estimates of <em>alpha</em>, <em>alpha_hat</em>, <em>alpha_scale</em>, and <em>sigma</em> are on the standardized scale and not on the “raw” scale of the data to which you fot the model. All parameters related to the lagged-effects are fine since you use the same variable as both dependent and independent variable. To get all parameter back on the appropriate scale, we’ll use the <em>generated quantities</em> block. You can use this block to calculate quantities in each iteration of your HMC-sampler (as opposed to the <em>transformed data</em> whose transformations are applied once, before fitting the data). In this block we’ll transform each draw of our standardized parameters (i.e., <em>alpha</em>, <em>alpha_hat</em>, <em>alpha_scale</em>, and <em>sigma</em>) into parameters on the original scale of the data. This basically means applying an inverse z-transform to the <em>alpha</em> and <em>alpha_hat</em> parameters in each iteration, and multiplying the <em>alpha_scale</em> and <em>sigma</em> parameters with the sample sd in each iteration. In the code below I first specify a vector, <em>alphas_raw</em>, in which I’ll store the individual means expressed on the original scale of <em>y</em>, and three real-valued parameters in which I’ll store the values for the population mean (<em>alpha_hat_raw</em>), population sd (<em>alpha_scale_raw</em>), and residual variance (<em>sigma_raw</em>) expressed on the original scale.</p>
 <pre class="stan"><code>
 generated quantities {
@@ -509,8 +509,8 @@ estimated_ar_model &lt;- sampling(HierAR,
 <pre><code>## 
 ## SAMPLING FOR MODEL &#39;HierarchicalAR1model&#39; NOW (CHAIN 1).
 ## Chain 1: 
-## Chain 1: Gradient evaluation took 0.001 seconds
-## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 10 seconds.
+## Chain 1: Gradient evaluation took 0.002 seconds
+## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 20 seconds.
 ## Chain 1: Adjust your expectations accordingly!
 ## Chain 1: 
 ## Chain 1: 
@@ -527,15 +527,15 @@ estimated_ar_model &lt;- sampling(HierAR,
 ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 1: 
-## Chain 1:  Elapsed Time: 26.699 seconds (Warm-up)
-## Chain 1:                18.482 seconds (Sampling)
-## Chain 1:                45.181 seconds (Total)
+## Chain 1:  Elapsed Time: 27.258 seconds (Warm-up)
+## Chain 1:                18.613 seconds (Sampling)
+## Chain 1:                45.871 seconds (Total)
 ## Chain 1: 
 ## 
 ## SAMPLING FOR MODEL &#39;HierarchicalAR1model&#39; NOW (CHAIN 2).
 ## Chain 2: 
-## Chain 2: Gradient evaluation took 0 seconds
-## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
+## Chain 2: Gradient evaluation took 0.001 seconds
+## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 10 seconds.
 ## Chain 2: Adjust your expectations accordingly!
 ## Chain 2: 
 ## Chain 2: 
@@ -552,9 +552,9 @@ estimated_ar_model &lt;- sampling(HierAR,
 ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 ## Chain 2: 
-## Chain 2:  Elapsed Time: 26.848 seconds (Warm-up)
-## Chain 2:                18.113 seconds (Sampling)
-## Chain 2:                44.961 seconds (Total)
+## Chain 2:  Elapsed Time: 28.023 seconds (Warm-up)
+## Chain 2:                18.79 seconds (Sampling)
+## Chain 2:                46.813 seconds (Total)
 ## Chain 2:</code></pre>
 <pre class="r"><code># Check results for population parameters
 print(estimated_ar_model, pars = c(&quot;alpha_hat_raw&quot;, &quot;alpha_scale_raw&quot;, &quot;beta_hat&quot;, &quot;beta_scale&quot;, &quot;sigma_raw&quot;))</code></pre>
@@ -569,7 +569,7 @@ print(estimated_ar_model, pars = c(&quot;alpha_hat_raw&quot;, &quot;alpha_scale_
 ## beta_scale      0.11       0 0.02 0.07 0.10 0.11 0.12  0.15   302 1.02
 ## sigma_raw       1.01       0 0.01 0.99 1.00 1.01 1.01  1.03  3720 1.00
 ## 
-## Samples were drawn using NUTS(diag_e) at Wed Nov 10 18:48:48 2021.
+## Samples were drawn using NUTS(diag_e) at Thu Nov 11 09:53:36 2021.
 ## For each parameter, n_eff is a crude measure of effective sample size,
 ## and Rhat is the potential scale reduction factor on split chains (at 
 ## convergence, Rhat=1).</code></pre>
